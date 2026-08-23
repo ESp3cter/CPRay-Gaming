@@ -160,7 +160,7 @@ class _SettingsViewState extends State<SettingsView> {
                     ),
                     SizedBox(height: 2),
                     Text(
-                      'Version 1.0.0 (Sing-box Core)',
+                      'Version 0.0.1 (Sing-box Core)',
                       style: TextStyle(color: Color(0xFF6B7A94), fontSize: 12),
                     ),
                   ],
