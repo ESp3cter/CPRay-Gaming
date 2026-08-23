@@ -8,7 +8,7 @@
 
 - 🎯 **Gaming TUN Mode (Wintun):** Full system UDP/TCP tunneling specifically optimized for online games, Steam, Discord, and anti-cheat clients.
 - ⚡ **Multi-Protocol Support:** Native support for **VLESS (Reality / TLS)**, **VMess**, **Trojan**, **Hysteria 2 (QUIC)**, **TUIC (BBR)**, **WireGuard**, and **Shadowsocks**.
-- 📡 **Passerguard Subscription Integration:** Import and refresh Passerguard panel subscription links with one click.
+- 📡 **Universal Subscription Support:** Import subscription links and configs from **Pasarguard**, **Marzban**, **3X-UI**, or any standard V2Ray/Sing-box panel.
 - ⏱️ **Real-Time Latency (Ping) Meter:** Concurrent TCP latency testing to quickly identify the fastest gaming nodes.
 - 🛡️ **Domestic Traffic Bypass:** Automatically bypasses local/domestic IP ranges and websites for maximum bandwidth.
 - 🎨 **Futuristic Neon Cyberpunk UI:** Dark-mode glowing aesthetics with live speed counters and session metrics.

@@ -43,14 +43,14 @@ class _ServerListViewState extends State<ServerListView> {
             side: const BorderSide(color: Color(0xFF00D4FF), width: 1.2),
           ),
           title: const Text(
-            'Import Passerguard Subscription',
+            'Import Pasarguard & V2Ray Subscription',
             style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w800),
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               const Text(
-                'Paste your subscription URL from your Passerguard / VPN panel:',
+                'Paste your subscription URL from Pasarguard, Marzban, or any V2Ray panel:',
                 style: TextStyle(color: Color(0xFF8C9BAE), fontSize: 13),
               ),
               const SizedBox(height: 14),
@@ -293,7 +293,7 @@ class _ServerListViewState extends State<ServerListView> {
                           ElevatedButton.icon(
                             onPressed: () => _showAddSubscriptionDialog(context),
                             icon: const Icon(Icons.add_link_rounded, size: 16),
-                            label: const Text('Add Passerguard Subscription'),
+                            label: const Text('Add Pasarguard / V2Ray Subscription'),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF00D4FF),
                               foregroundColor: const Color(0xFF0D0F18),
