@@ -26,6 +26,11 @@ jobs:
       - name: Install Inno Setup
         run: choco install innosetup -y
 
+      - name: Enable Windows Desktop Support
+        run: |
+          flutter config --enable-windows-desktop
+          flutter create --platforms=windows .
+
       - name: Fetch Dependencies
         run: flutter pub get
 
