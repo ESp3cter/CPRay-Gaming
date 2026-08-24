@@ -13,7 +13,7 @@ class SplitTunnelView extends StatefulWidget {
 class _SplitTunnelViewState extends State<SplitTunnelView> {
   final TextEditingController _appController = TextEditingController();
 
-  final List<String> _presets = [
+  final List<String> _presets = const [
     'steam.exe',
     'discord.exe',
     'cs2.exe',
@@ -66,10 +66,10 @@ class _SplitTunnelViewState extends State<SplitTunnelView> {
           // Header
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
+            children: const [
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
+                children: [
                   Text(
                     'Split Tunneling & App Routing',
                     style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800),
@@ -126,166 +126,178 @@ class _SplitTunnelViewState extends State<SplitTunnelView> {
 
           const SizedBox(height: 24),
 
-          if (splitMode != SplitTunnelMode.disabled) ...[
-            // Add Custom Process Name Bar
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _appController,
-                    onSubmitted: (val) => _addApp(val),
-                    style: const TextStyle(color: Colors.white, fontSize: 13),
-                    decoration: InputDecoration(
-                      hintText: 'Enter executable name (e.g. cs2.exe, discord.exe)...',
-                      hintStyle: const TextStyle(color: Color(0xFF5A6678)),
-                      prefixIcon: const Icon(Icons.add_to_queue_rounded, color: Color(0xFF00D4FF), size: 20),
-                      filled: true,
-                      fillColor: const Color(0xFF121522),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: const BorderSide(color: Color(0xFF22283D)),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: const BorderSide(color: Color(0xFF00D4FF)),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 12),
-                ElevatedButton.icon(
-                  onPressed: () => _addApp(_appController.text),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF00D4FF),
-                    foregroundColor: const Color(0xFF090B10),
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                  ),
-                  icon: const Icon(Icons.add_rounded, size: 18),
-                  label: const Text('Add App', style: TextStyle(fontWeight: FontWeight.w800)),
-                ),
-              ],
-            ),
+          // Dynamic Body
+          Expanded(
+            child: splitMode != SplitTunnelMode.disabled
+                ? _buildActiveSplitContent(context, appList)
+                : _buildDisabledContent(),
+          ),
+        ],
+      ),
+    );
+  }
 
-            const SizedBox(height: 16),
-
-            // Quick Presets
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: _presets.map((preset) {
-                final isAdded = appList.contains(preset);
-                return InkWell(
-                  onTap: () => isAdded ? _removeApp(preset) : _addApp(preset),
-                  borderRadius: BorderRadius.circular(10),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: isAdded ? const Color(0xFF00D4FF).withOpacity(0.18) : const Color(0xFF141726),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: isAdded ? const Color(0xFF00D4FF).withOpacity(0.6) : const Color(0xFF242A42),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          isAdded ? Icons.check_rounded : Icons.add_rounded,
-                          size: 14,
-                          color: isAdded ? const Color(0xFF00D4FF) : const Color(0xFF7E8B9E),
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          preset,
-                          style: TextStyle(
-                            color: isAdded ? Colors.white : const Color(0xFF8C9BAE),
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-
-            const SizedBox(height: 20),
-
-            // Configured Apps Grid / List
+  Widget _buildActiveSplitContent(BuildContext context, List<String> appList) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Add Custom Process Name Bar
+        Row(
+          children: [
             Expanded(
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF10131E),
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: const Color(0xFF1E2438)),
+              child: TextField(
+                controller: _appController,
+                onSubmitted: (val) => _addApp(val),
+                style: const TextStyle(color: Colors.white, fontSize: 13),
+                decoration: InputDecoration(
+                  hintText: 'Enter executable name (e.g. cs2.exe, discord.exe)...',
+                  hintStyle: const TextStyle(color: Color(0xFF5A6678)),
+                  prefixIcon: const Icon(Icons.add_to_queue_rounded, color: Color(0xFF00D4FF), size: 20),
+                  filled: true,
+                  fillColor: const Color(0xFF121522),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: const BorderSide(color: Color(0xFF22283D)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: const BorderSide(color: Color(0xFF00D4FF)),
+                  ),
                 ),
-                child: appList.isEmpty
-                    ? const Center(
-                        child: Text(
-                          'No apps added yet. Type an executable name or click a preset above.',
-                          style: TextStyle(color: Color(0xFF5A6678), fontSize: 13),
-                        ),
-                      )
-                    : ListView.builder(
-                        itemCount: appList.length,
-                        itemBuilder: (context, index) {
-                          final app = appList[index];
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: 8),
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF151928),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: const Color(0xFF242A42)),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.sports_esports_rounded, color: Color(0xFF00D4FF), size: 18),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Text(
-                                    app,
-                                    style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700),
-                                  ),
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.close_rounded, color: Color(0xFFFF3366), size: 18),
-                                  onPressed: () => _removeApp(app),
-                                  splashRadius: 18,
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
               ),
             ),
-          ] else ...[
-            Expanded(
-              child: Center(
-                child: Column(
+            const SizedBox(width: 12),
+            ElevatedButton.icon(
+              onPressed: () => _addApp(_appController.text),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF00D4FF),
+                foregroundColor: const Color(0xFF090B10),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              ),
+              icon: const Icon(Icons.add_rounded, size: 18),
+              label: const Text('Add App', style: TextStyle(fontWeight: FontWeight.w800)),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 16),
+
+        // Quick Presets
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: _presets.map((preset) {
+            final isAdded = appList.contains(preset);
+            return InkWell(
+              onTap: () => isAdded ? _removeApp(preset) : _addApp(preset),
+              borderRadius: BorderRadius.circular(10),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: isAdded ? const Color(0xFF00D4FF).withOpacity(0.18) : const Color(0xFF141726),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: isAdded ? const Color(0xFF00D4FF).withOpacity(0.6) : const Color(0xFF242A42),
+                  ),
+                ),
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
-                  children: const [
-                    Icon(Icons.all_inclusive_rounded, size: 48, color: Color(0xFF38435E)),
-                    SizedBox(height: 14),
-                    Text(
-                      'Split Tunneling is Disabled',
-                      style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700),
+                  children: [
+                    Icon(
+                      isAdded ? Icons.check_rounded : Icons.add_rounded,
+                      size: 14,
+                      color: isAdded ? const Color(0xFF00D4FF) : const Color(0xFF7E8B9E),
                     ),
-                    SizedBox(height: 6),
+                    const SizedBox(width: 6),
                     Text(
-                      'All internet traffic from games, browsers, and applications is protected by CPRay.',
-                      style: TextStyle(color: Color(0xFF6B7A94), fontSize: 12),
+                      preset,
+                      style: TextStyle(
+                        color: isAdded ? Colors.white : const Color(0xFF8C9BAE),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ],
                 ),
               ),
+            );
+          }).toList(),
+        ),
+
+        const SizedBox(height: 20),
+
+        // Configured Apps List
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFF10131E),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: const Color(0xFF1E2438)),
             ),
-          ],
+            child: appList.isEmpty
+                ? const Center(
+                    child: Text(
+                      'No apps added yet. Type an executable name or click a preset above.',
+                      style: TextStyle(color: Color(0xFF5A6678), fontSize: 13),
+                    ),
+                  )
+                : ListView.builder(
+                    itemCount: appList.length,
+                    itemBuilder: (context, index) {
+                      final app = appList[index];
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF151928),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFF242A42)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.sports_esports_rounded, color: Color(0xFF00D4FF), size: 18),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                app,
+                                style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700),
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.close_rounded, color: Color(0xFFFF3366), size: 18),
+                              onPressed: () => _removeApp(app),
+                              splashRadius: 18,
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDisabledContent() {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: const [
+          Icon(Icons.all_inclusive_rounded, size: 54, color: Color(0xFF38435E)),
+          SizedBox(height: 14),
+          Text(
+            'Split Tunneling is Disabled',
+            style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700),
+          ),
+          SizedBox(height: 6),
+          Text(
+            'All internet traffic from games, browsers, and applications is protected by CPRay.',
+            style: TextStyle(color: Color(0xFF6B7A94), fontSize: 12),
+          ),
         ],
       ),
     );
