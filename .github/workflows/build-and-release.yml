@@ -29,7 +29,7 @@ jobs:
       - name: Enable Windows Desktop Support
         run: |
           flutter config --enable-windows-desktop
-          flutter create --platforms=windows .
+          flutter create --project-name=cpray_gaming --platforms=windows --org=com.cpray.gaming .
 
       - name: Fetch Dependencies
         run: flutter pub get
@@ -53,6 +53,7 @@ jobs:
         shell: pwsh
         run: |
           Copy-Item "assets\sing-box.exe" -Destination "build\windows\x64\runner\Release\sing-box.exe" -Force
+          New-Item -ItemType Directory -Force -Path "build\installer" | Out-Null
 
       - name: Compile Inno Setup Installer
         shell: cmd
