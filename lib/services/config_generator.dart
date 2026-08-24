@@ -59,30 +59,35 @@ class ConfigGenerator {
       'tag': 'dns-out',
     });
 
-    // 4. DNS Configuration for Low Gaming Latency
+    // 4. DNS Configuration for Low Gaming Latency (Sing-box 1.12+ modern format)
     final dns = {
       'servers': [
         {
           'tag': 'remote-dns',
-          'address': 'https://${settings.selectedDns}/dns-query',
+          'type': 'udp',
+          'server': settings.selectedDns,
+          'server_port': 53,
           'detour': 'proxy',
         },
         {
           'tag': 'direct-dns',
-          'address': '223.5.5.5',
+          'type': 'local',
           'detour': 'direct',
         }
       ],
       'rules': [
-        {
-          'outbound': ['any'],
-          'server': 'direct-dns',
-        },
-        {
-          'clash_mode': 'Global',
-          'server': 'remote-dns',
-        }
+        if (settings.bypassDomesticIps) ...[
+          {
+            'geoip': ['ir', 'private'],
+            'server': 'direct-dns',
+          },
+          {
+            'geosite': ['ir'],
+            'server': 'direct-dns',
+          }
+        ],
       ],
+      'final': 'remote-dns',
       'strategy': 'prefer_ipv4',
     };
 

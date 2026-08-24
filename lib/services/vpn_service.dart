@@ -93,6 +93,9 @@ class VpnService {
       _process = await Process.start(
         singboxExe,
         ['run', '-c', configFile.path],
+        environment: {
+          'ENABLE_DEPRECATED_LEGACY_DNS_SERVERS': 'true',
+        },
         mode: ProcessStartMode.normal,
       );
 
