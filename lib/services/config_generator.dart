@@ -3,6 +3,32 @@ import '../models/app_settings.dart';
 import '../models/server_config.dart';
 
 class ConfigGenerator {
+  static const List<String> _iranianDomainSuffixes = [
+    '.ir',
+    '.xn--mgba3a4f16a',
+    'digikala.com',
+    'divar.ir',
+    'snapp.ir',
+    'torob.com',
+    'varzesh3.com',
+    'aparat.com',
+    'telewebion.com',
+    'shaparak.ir',
+    'tamin.ir',
+    'bale.ai',
+    'rubika.ir',
+    'eitaa.com',
+    'splus.ir',
+    'arvancloud.ir',
+    'cafebazaar.ir',
+    'myket.ir',
+    'bmi.ir',
+    'bankmellat.ir',
+    'bki.ir',
+    'rb24.ir',
+    'tejaratbank.ir',
+  ];
+
   static Map<String, dynamic> generateSingboxConfig({
     required ServerConfig server,
     required AppSettings settings,
@@ -69,12 +95,7 @@ class ConfigGenerator {
       'rules': [
         if (settings.bypassIranianTraffic) ...[
           {
-            'geoip': ['ir', 'private'],
-            'server': 'direct-dns',
-          },
-          {
-            'geosite': ['ir'],
-            'domain_suffix': ['.ir'],
+            'domain_suffix': _iranianDomainSuffixes,
             'server': 'direct-dns',
           }
         ],
@@ -101,12 +122,7 @@ class ConfigGenerator {
     // Iranian Domestic Bypass
     if (settings.bypassIranianTraffic) {
       routeRules.add({
-        'geoip': ['ir', 'private'],
-        'outbound': 'direct',
-      });
-      routeRules.add({
-        'geosite': ['ir'],
-        'domain_suffix': ['.ir'],
+        'domain_suffix': _iranianDomainSuffixes,
         'outbound': 'direct',
       });
     }
