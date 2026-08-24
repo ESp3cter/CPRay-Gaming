@@ -114,14 +114,15 @@ class ServerProvider extends ChangeNotifier {
   }
 
   Future<void> testAllPings() async {
-    final updated = await PingService.testAllPings(_servers);
+    await PingService.testAllServers(_servers, onProgress: () {
+      notifyListeners();
+    });
     // Sort fastest servers to top
-    updated.sort((a, b) {
-      final pA = a.ping ?? 9999;
-      final pB = b.ping ?? 9999;
+    _servers.sort((a, b) {
+      final pA = (a.ping != null && a.ping! > 0) ? a.ping! : 9999;
+      final pB = (b.ping != null && b.ping! > 0) ? b.ping! : 9999;
       return pA.compareTo(pB);
     });
-    _servers = updated;
     await StorageService.saveServers(_servers);
     notifyListeners();
   }
@@ -130,16 +131,15 @@ class ServerProvider extends ChangeNotifier {
     final index = _servers.indexWhere((s) => s.id == server.id);
     if (index == -1) return;
 
-    _servers[index] = _servers[index].copyWith(isTesting: true);
+    _servers[index].isTestingPing = true;
     notifyListeners();
 
-    final ping = await PingService.testServerPing(server);
-    _servers[index] = _servers[index].copyWith(ping: ping, isTesting: false);
+    await PingService.testServerPing(_servers[index]);
 
     // Re-sort after ping
     _servers.sort((a, b) {
-      final pA = a.ping ?? 9999;
-      final pB = b.ping ?? 9999;
+      final pA = (a.ping != null && a.ping! > 0) ? a.ping! : 9999;
+      final pB = (b.ping != null && b.ping! > 0) ? b.ping! : 9999;
       return pA.compareTo(pB);
     });
 

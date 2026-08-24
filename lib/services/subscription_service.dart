@@ -19,6 +19,11 @@ class SubscriptionService {
     return parseContent(body);
   }
 
+  static ServerConfig? parseSingleConfig(String rawUri) {
+    final id = 'manual_${DateTime.now().millisecondsSinceEpoch}';
+    return parseUri(rawUri.trim(), id);
+  }
+
   static List<ServerConfig> parseContent(String content) {
     String decoded = content;
 
