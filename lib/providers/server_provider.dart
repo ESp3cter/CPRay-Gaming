@@ -42,8 +42,9 @@ class ServerProvider extends ChangeNotifier {
 
   Future<void> _loadInitialData() async {
     _servers = await StorageService.loadServers();
+    final subUrl = await StorageService.loadSubscriptionUrl();
     final settings = await StorageService.loadSettings();
-    _subscriptionUrl = settings.subscriptionUrl;
+    _subscriptionUrl = (subUrl != null && subUrl.isNotEmpty) ? subUrl : settings.subscriptionUrl;
     notifyListeners();
 
     if (_servers.isNotEmpty) {
@@ -80,6 +81,7 @@ class ServerProvider extends ChangeNotifier {
         _servers = fetched;
         _subscriptionUrl = url;
         await StorageService.saveServers(_servers);
+        await StorageService.saveSubscriptionUrl(url);
 
         final settings = await StorageService.loadSettings();
         await StorageService.saveSettings(settings.copyWith(subscriptionUrl: url));

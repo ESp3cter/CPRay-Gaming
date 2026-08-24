@@ -140,6 +140,7 @@ class VpnService {
         ['run', '-c', configFile.path],
         environment: {
           'ENABLE_DEPRECATED_LEGACY_DNS_SERVERS': 'true',
+          'ENABLE_DEPRECATED_MISSING_DOMAIN_RESOLVER': 'true',
         },
         mode: ProcessStartMode.normal,
       );

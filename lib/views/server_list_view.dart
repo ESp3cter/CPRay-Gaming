@@ -33,6 +33,7 @@ class _ServerListViewState extends State<ServerListView> {
   }
 
   void _showAddSubscriptionDialog(BuildContext context) {
+    _subUrlController.text = context.read<ServerProvider>().subscriptionUrl ?? '';
     showDialog(
       context: context,
       builder: (context) {
@@ -230,9 +231,15 @@ class _ServerListViewState extends State<ServerListView> {
               const SizedBox(width: 10),
               // Fast Refresh Sub Button
               ElevatedButton.icon(
-                onPressed: () {
-                  if (serverProvider.subscriptionUrl != null && serverProvider.subscriptionUrl!.isNotEmpty) {
-                    serverProvider.updateSubscription(serverProvider.subscriptionUrl!);
+                onPressed: () async {
+                  final url = serverProvider.subscriptionUrl;
+                  if (url != null && url.isNotEmpty) {
+                    await serverProvider.updateSubscription(url);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Subscription nodes refreshed successfully!')),
+                      );
+                    }
                   } else {
                     _showAddSubscriptionDialog(context);
                   }
@@ -253,7 +260,14 @@ class _ServerListViewState extends State<ServerListView> {
                   style: const TextStyle(fontWeight: FontWeight.w800),
                 ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 6),
+              // Change Sub URL Button
+              IconButton(
+                icon: const Icon(Icons.edit_link_rounded, color: Color(0xFF00D4FF), size: 22),
+                tooltip: 'Change / Set Subscription URL',
+                onPressed: () => _showAddSubscriptionDialog(context),
+              ),
+              const SizedBox(width: 6),
               // Add Node Button
               IconButton(
                 icon: const Icon(Icons.add_circle_outline_rounded, color: Color(0xFF9D00FF), size: 28),

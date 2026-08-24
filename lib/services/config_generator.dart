@@ -166,6 +166,10 @@ class ConfigGenerator {
       'inbounds': inbounds,
       'outbounds': outbounds,
       'route': {
+        'default_domain_resolver': {
+          'server': 'direct-dns',
+          'strategy': 'prefer_ipv4',
+        },
         'rules': routeRules,
         'final': finalOutbound,
         'auto_detect_interface': true,
@@ -175,6 +179,10 @@ class ConfigGenerator {
 
   static Map<String, dynamic> _buildProxyOutbound(ServerConfig server) {
     final protocol = server.protocol.toLowerCase();
+    final domainResolver = {
+      'server': 'direct-dns',
+      'strategy': 'prefer_ipv4',
+    };
 
     if (protocol == 'vless') {
       final map = <String, dynamic>{
@@ -183,6 +191,7 @@ class ConfigGenerator {
         'server': server.server,
         'server_port': server.port,
         'uuid': server.uuid,
+        'domain_resolver': domainResolver,
       };
 
       if (server.flow != null && server.flow!.isNotEmpty) {
@@ -235,6 +244,7 @@ class ConfigGenerator {
         'server': server.server,
         'server_port': server.port,
         'password': server.uuid,
+        'domain_resolver': domainResolver,
         'tls': {
           'enabled': true,
           'server_name': server.sni,
@@ -248,6 +258,7 @@ class ConfigGenerator {
         'server': server.server,
         'server_port': server.port,
         'password': server.uuid,
+        'domain_resolver': domainResolver,
         'tls': {
           'enabled': true,
           'server_name': server.sni,
@@ -262,6 +273,7 @@ class ConfigGenerator {
         'uuid': server.uuid,
         'password': server.uuid,
         'congestion_controller': 'bbr',
+        'domain_resolver': domainResolver,
         'tls': {
           'enabled': true,
           'server_name': server.sni,
@@ -277,6 +289,7 @@ class ConfigGenerator {
         'uuid': server.uuid,
         'security': 'auto',
         'alter_id': 0,
+        'domain_resolver': domainResolver,
         'tls': server.security == 'tls'
             ? {
                 'enabled': true,
@@ -292,6 +305,7 @@ class ConfigGenerator {
         'server_port': server.port,
         'method': 'chacha20-ietf-poly1305',
         'password': server.uuid ?? 'secret',
+        'domain_resolver': domainResolver,
       };
     }
   }
