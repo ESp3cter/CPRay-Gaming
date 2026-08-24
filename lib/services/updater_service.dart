@@ -9,7 +9,7 @@ import '../models/update_info.dart';
 import 'vpn_service.dart';
 
 class UpdaterService {
-  static String repoOwner = 'Ah-Khad3mi';
+  static String repoOwner = 'ESp3cter';
   static const String repoName = 'CPRay-Gaming';
 
   static Future<UpdateInfo?> checkForUpdates() async {

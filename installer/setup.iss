@@ -2,7 +2,7 @@
 #define MyAppName "CPRay Gaming"
 #define MyAppVersion "0.0.3"
 #define MyAppPublisher "CPRay Team"
-#define MyAppURL "https://github.com/Ah-Khad3mi/CPRay-Gaming"
+#define MyAppURL "https://github.com/ESp3cter/CPRay-Gaming"
 #define MyAppExeName "cpray_gaming.exe"
 
 [Setup]
