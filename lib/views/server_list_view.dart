@@ -263,7 +263,7 @@ class _ServerListViewState extends State<ServerListView> {
               const SizedBox(width: 6),
               // Change Sub URL Button
               IconButton(
-                icon: const Icon(Icons.edit_link_rounded, color: Color(0xFF00D4FF), size: 22),
+                icon: const Icon(Icons.link_rounded, color: Color(0xFF00D4FF), size: 22),
                 tooltip: 'Change / Set Subscription URL',
                 onPressed: () => _showAddSubscriptionDialog(context),
               ),
