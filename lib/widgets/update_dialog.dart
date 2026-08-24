@@ -173,34 +173,24 @@ class _UpdateDialogState extends State<UpdateDialog> {
             ],
             const SizedBox(height: 22),
             if (!_isDownloading)
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Text(
-                      'Later',
-                      style: TextStyle(color: Color(0xFF7E8B9E)),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: _startUpdate,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF00D4FF),
+                    foregroundColor: const Color(0xFF0D0F18),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  ElevatedButton.icon(
-                    onPressed: _startUpdate,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF00D4FF),
-                      foregroundColor: const Color(0xFF0D0F18),
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    icon: const Icon(Icons.download_rounded, size: 18),
-                    label: const Text(
-                      'Update Now',
-                      style: TextStyle(fontWeight: FontWeight.w800),
-                    ),
+                  icon: const Icon(Icons.system_update_alt_rounded, size: 18),
+                  label: const Text(
+                    'Install & Restart Now (Required)',
+                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
                   ),
-                ],
+                ),
               ),
           ],
         ),

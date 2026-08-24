@@ -46,6 +46,11 @@ class VpnService {
     _logController.add(formatted);
   }
 
+  static void clearLogs() {
+    _logs.clear();
+    _logController.add('[LOGS CLEARED]');
+  }
+
   static Future<String> _getSingboxPath() async {
     final appDir = File(Platform.resolvedExecutable).parent.path;
     final primary = p.join(appDir, 'sing-box.exe');
@@ -54,9 +59,50 @@ class VpnService {
     final dataDir = p.join(appDir, 'data', 'sing-box.exe');
     if (await File(dataDir).exists()) return dataDir;
 
-    // Development / AppData fallback
     final tempDir = await getApplicationSupportDirectory();
     return p.join(tempDir.path, 'sing-box.exe');
+  }
+
+  static Future<void> _setSystemProxy(bool enable, int port) async {
+    if (!Platform.isWindows) return;
+    try {
+      if (enable) {
+        await Process.run('reg', [
+          'add',
+          'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings',
+          '/v',
+          'ProxyEnable',
+          '/t',
+          'REG_DWORD',
+          '/d',
+          '1',
+          '/f'
+        ]);
+        await Process.run('reg', [
+          'add',
+          'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings',
+          '/v',
+          'ProxyServer',
+          '/t',
+          'REG_SZ',
+          '/d',
+          '127.0.0.1:$port',
+          '/f'
+        ]);
+      } else {
+        await Process.run('reg', [
+          'add',
+          'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings',
+          '/v',
+          'ProxyEnable',
+          '/t',
+          'REG_DWORD',
+          '/d',
+          '0',
+          '/f'
+        ]);
+      }
+    } catch (_) {}
   }
 
   static Future<void> startVpn({
@@ -76,14 +122,13 @@ class VpnService {
       final jsonConfig = ConfigGenerator.generateJsonString(server: server, settings: settings);
       await configFile.writeAsString(jsonConfig);
 
-      _addLog('Generated Sing-box configuration with TUN mode: ${settings.isGamingTunMode}');
+      _addLog('Generated Sing-box configuration with Mode: ${settings.vpnMode.name.toUpperCase()}');
 
       final singboxExe = await _getSingboxPath();
       _addLog('Target core executable: $singboxExe');
 
       if (!await File(singboxExe).exists()) {
         _addLog('Core binary not found at $singboxExe. Simulating connection for UI testing.');
-        // If sing-box binary isn't extracted yet, simulate connected state
         await Future.delayed(const Duration(milliseconds: 1500));
         _setStatus(VpnStatus.connected);
         _startSessionTimer();
@@ -104,6 +149,10 @@ class VpnService {
         if (line.contains('started') || line.contains('sing-box started')) {
           _setStatus(VpnStatus.connected);
           _startSessionTimer();
+          if (settings.vpnMode == VpnMode.systemProxy) {
+            _setSystemProxy(true, settings.httpPort);
+            _addLog('Windows System Proxy configured to 127.0.0.1:${settings.httpPort}');
+          }
         }
       });
 
@@ -114,16 +163,21 @@ class VpnService {
       _process!.exitCode.then((code) {
         _addLog('Sing-box core exited with code $code');
         _stopSessionTimer();
+        if (settings.vpnMode == VpnMode.systemProxy) {
+          _setSystemProxy(false, settings.httpPort);
+        }
         if (_status != VpnStatus.disconnecting) {
           _setStatus(VpnStatus.disconnected);
         }
       });
 
-      // Timeout fallback to connected
       Future.delayed(const Duration(seconds: 3), () {
         if (_status == VpnStatus.connecting) {
           _setStatus(VpnStatus.connected);
           _startSessionTimer();
+          if (settings.vpnMode == VpnMode.systemProxy) {
+            _setSystemProxy(true, settings.httpPort);
+          }
         }
       });
     } catch (e) {
@@ -138,6 +192,7 @@ class VpnService {
     _addLog('Disconnecting CPRay tunnel...');
 
     _stopSessionTimer();
+    await _setSystemProxy(false, 20809);
 
     if (_process != null) {
       _process!.kill(ProcessSignal.sigterm);

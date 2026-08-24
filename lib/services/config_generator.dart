@@ -9,18 +9,16 @@ class ConfigGenerator {
   }) {
     final List<Map<String, dynamic>> inbounds = [];
 
-    // 1. Mixed inbound (SOCKS5 & HTTP)
+    // 1. Mixed inbound (SOCKS5 & HTTP) - Clean Sing-box 1.13+ format
     inbounds.add({
       'type': 'mixed',
       'tag': 'mixed-in',
       'listen': '127.0.0.1',
       'listen_port': settings.socksPort,
-      'sniff': true,
-      'sniff_override_destination': false,
     });
 
     // 2. Gaming TUN Mode (Wintun)
-    if (settings.isGamingTunMode) {
+    if (settings.vpnMode == VpnMode.tun) {
       inbounds.add({
         'type': 'tun',
         'tag': 'tun-in',
@@ -29,8 +27,6 @@ class ConfigGenerator {
         'auto_route': true,
         'strict_route': true,
         'stack': 'mixed',
-        'sniff': true,
-        'sniff_override_destination': false,
       });
     }
 
@@ -59,13 +55,14 @@ class ConfigGenerator {
       'tag': 'dns-out',
     });
 
-    // 4. DNS Configuration for Low Gaming Latency (Sing-box 1.12+ modern format)
+    // 4. DNS Configuration
+    final activeDns = settings.isAutoDns ? settings.selectedDns : settings.customDns;
     final dns = {
       'servers': [
         {
           'tag': 'remote-dns',
           'type': 'udp',
-          'server': settings.selectedDns,
+          'server': activeDns,
           'server_port': 53,
           'detour': 'proxy',
         },
@@ -76,13 +73,14 @@ class ConfigGenerator {
         }
       ],
       'rules': [
-        if (settings.bypassDomesticIps) ...[
+        if (settings.bypassIranianTraffic) ...[
           {
             'geoip': ['ir', 'private'],
             'server': 'direct-dns',
           },
           {
             'geosite': ['ir'],
+            'domain_suffix': ['.ir'],
             'server': 'direct-dns',
           }
         ],
@@ -91,8 +89,11 @@ class ConfigGenerator {
       'strategy': 'prefer_ipv4',
     };
 
-    // 5. Routing Rules
+    // 5. Routing Rules (Sing-box 1.13+ rule-action format)
     final List<Map<String, dynamic>> routeRules = [
+      {
+        'action': 'sniff',
+      },
       {
         'protocol': 'dns',
         'outbound': 'dns-out',
@@ -103,21 +104,41 @@ class ConfigGenerator {
       },
     ];
 
-    if (settings.bypassDomesticIps) {
+    // Iranian Domestic Bypass
+    if (settings.bypassIranianTraffic) {
       routeRules.add({
         'geoip': ['ir', 'private'],
         'outbound': 'direct',
       });
       routeRules.add({
         'geosite': ['ir'],
+        'domain_suffix': ['.ir'],
         'outbound': 'direct',
       });
     }
 
-    // Route everything else through proxy
-    routeRules.add({
-      'outbound': 'proxy',
-    });
+    // Split Tunneling Rules
+    if (settings.splitTunnelMode == SplitTunnelMode.inclusive && settings.splitTunnelApps.isNotEmpty) {
+      routeRules.add({
+        'process_name': settings.splitTunnelApps,
+        'outbound': 'proxy',
+      });
+      routeRules.add({
+        'outbound': 'direct',
+      });
+    } else if (settings.splitTunnelMode == SplitTunnelMode.exclusive && settings.splitTunnelApps.isNotEmpty) {
+      routeRules.add({
+        'process_name': settings.splitTunnelApps,
+        'outbound': 'direct',
+      });
+      routeRules.add({
+        'outbound': 'proxy',
+      });
+    } else {
+      routeRules.add({
+        'outbound': 'proxy',
+      });
+    }
 
     return {
       'log': {
@@ -246,7 +267,6 @@ class ConfigGenerator {
             : null,
       };
     } else {
-      // Shadowsocks fallback
       return {
         'type': 'shadowsocks',
         'tag': 'proxy',

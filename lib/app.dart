@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/server_provider.dart';
 import 'providers/vpn_provider.dart';
-import 'views/home_view.dart';
+import 'views/main_layout.dart';
 
 class CPRayGamingApp extends StatelessWidget {
   const CPRayGamingApp({super.key});
@@ -20,18 +20,18 @@ class CPRayGamingApp extends StatelessWidget {
         themeMode: ThemeMode.dark,
         darkTheme: ThemeData(
           brightness: Brightness.dark,
-          scaffoldBackgroundColor: const Color(0xFF0B0D14),
+          scaffoldBackgroundColor: const Color(0xFF090B10),
           primaryColor: const Color(0xFF00D4FF),
           colorScheme: const ColorScheme.dark(
             primary: Color(0xFF00D4FF),
             secondary: Color(0xFF00FF88),
-            surface: Color(0xFF141726),
-            background: Color(0xFF0B0D14),
+            surface: Color(0xFF10131E),
+            background: Color(0xFF090B10),
           ),
           fontFamily: 'Segoe UI',
           useMaterial3: true,
         ),
-        home: const HomeView(),
+        home: const MainLayout(),
       ),
     );
   }

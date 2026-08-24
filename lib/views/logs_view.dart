@@ -25,86 +25,149 @@ class _LogsViewState extends State<LogsView> {
       });
     }
 
-    return Scaffold(
-      backgroundColor: const Color(0xFF0B0D14),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF0B0D14),
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: const Text(
-          'Engine Live Logs',
-          style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w800),
-        ),
-        actions: [
-          IconButton(
-            icon: Icon(
-              _autoScroll ? Icons.vertical_align_bottom_rounded : Icons.pause_rounded,
-              color: _autoScroll ? const Color(0xFF00FF88) : const Color(0xFF6B7A94),
-            ),
-            tooltip: _autoScroll ? 'Auto-scroll ON' : 'Auto-scroll PAUSED',
-            onPressed: () {
-              setState(() => _autoScroll = !_autoScroll);
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.copy_rounded, color: Color(0xFF00D4FF)),
-            tooltip: 'Copy Logs',
-            onPressed: () {
-              Clipboard.setData(ClipboardData(text: logs.join('\n')));
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Logs copied to clipboard!')),
-              );
-            },
-          ),
-        ],
-      ),
-      body: Container(
-        margin: const EdgeInsets.all(16),
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: const Color(0xFF07080C),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFF1E2336)),
-        ),
-        child: logs.isEmpty
-            ? const Center(
-                child: Text(
-                  'No log entries yet. Connect to a server to see live traffic routing.',
-                  style: TextStyle(color: Color(0xFF5A6678), fontSize: 12),
+    return Container(
+      color: const Color(0xFF090B10),
+      padding: const EdgeInsets.all(28),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header & Toolbar
+          Row(
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Sing-box Core Live Terminal',
+                    style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${logs.length} entries recorded • Real-time stdout & diagnostics',
+                    style: const TextStyle(color: Color(0xFF6B7A94), fontSize: 12),
+                  ),
+                ],
+              ),
+              const Spacer(),
+              // Auto Scroll Toggle
+              ElevatedButton.icon(
+                onPressed: () {
+                  setState(() => _autoScroll = !_autoScroll);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF141A2C),
+                  foregroundColor: _autoScroll ? const Color(0xFF00FF88) : const Color(0xFF7E8B9E),
+                  side: BorderSide(
+                    color: _autoScroll ? const Color(0xFF00FF88) : const Color(0xFF242A42),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
-              )
-            : ListView.builder(
-                controller: _scrollController,
-                itemCount: logs.length,
-                itemBuilder: (context, index) {
-                  final line = logs[index];
-                  Color textColor = const Color(0xFFCBD5E1);
-
-                  if (line.contains('[ERROR]') || line.contains('fatal') || line.contains('failed')) {
-                    textColor = const Color(0xFFFF3366);
-                  } else if (line.contains('TUN') || line.contains('connected') || line.contains('started')) {
-                    textColor = const Color(0xFF00FF88);
-                  } else if (line.contains('warn')) {
-                    textColor = const Color(0xFFFFB300);
-                  }
-
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 2),
-                    child: Text(
-                      line,
-                      style: TextStyle(
-                        fontFamily: 'monospace',
-                        color: textColor,
-                        fontSize: 11,
-                        height: 1.3,
-                      ),
-                    ),
+                icon: Icon(
+                  _autoScroll ? Icons.vertical_align_bottom_rounded : Icons.pause_rounded,
+                  size: 16,
+                ),
+                label: Text(_autoScroll ? 'Auto-Scroll ON' : 'Auto-Scroll PAUSED', style: const TextStyle(fontSize: 12)),
+              ),
+              const SizedBox(width: 10),
+              // Clear / Reset Logs Button
+              ElevatedButton.icon(
+                onPressed: () {
+                  vpnProvider.clearLogs();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Console logs cleared!')),
                   );
                 },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF1A1424),
+                  foregroundColor: const Color(0xFFFF3366),
+                  side: const BorderSide(color: Color(0xFFFF3366), width: 1.2),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                icon: const Icon(Icons.delete_sweep_rounded, size: 16),
+                label: const Text('Reset Logs', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),
               ),
+              const SizedBox(width: 10),
+              // Copy Logs Button
+              ElevatedButton.icon(
+                onPressed: () {
+                  Clipboard.setData(ClipboardData(text: logs.join('\n')));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Logs copied to clipboard!')),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF00D4FF),
+                  foregroundColor: const Color(0xFF090B10),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                icon: const Icon(Icons.copy_rounded, size: 16),
+                label: const Text('Copy All', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 20),
+
+          // Terminal Window Box
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFF06070B),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFF1B2133)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.4),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: logs.isEmpty
+                  ? const Center(
+                      child: Text(
+                        'Terminal initialized. Connect to a server node to view live traffic routing stdout.',
+                        style: TextStyle(color: Color(0xFF4A5568), fontSize: 13, fontFamily: 'monospace'),
+                      ),
+                    )
+                  : ListView.builder(
+                      controller: _scrollController,
+                      itemCount: logs.length,
+                      itemBuilder: (context, index) {
+                        final line = logs[index];
+                        Color textColor = const Color(0xFFCBD5E1);
+
+                        if (line.contains('[ERROR]') || line.contains('fatal') || line.contains('FATAL') || line.contains('failed')) {
+                          textColor = const Color(0xFFFF3366);
+                        } else if (line.contains('TUN') || line.contains('connected') || line.contains('started')) {
+                          textColor = const Color(0xFF00FF88);
+                        } else if (line.contains('warn') || line.contains('WARN')) {
+                          textColor = const Color(0xFFFFB300);
+                        } else if (line.contains('CLEARED')) {
+                          textColor = const Color(0xFF00D4FF);
+                        }
+
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 2.5),
+                          child: Text(
+                            line,
+                            style: TextStyle(
+                              fontFamily: 'Consolas, monospace',
+                              color: textColor,
+                              fontSize: 12,
+                              height: 1.35,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+            ),
+          ),
+        ],
       ),
     );
   }

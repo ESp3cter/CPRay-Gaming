@@ -12,7 +12,6 @@ class VpnProvider extends ChangeNotifier {
   int _connectedSeconds = 0;
   List<String> _logs = [];
 
-  // Speeds in KB/s
   double _uploadSpeed = 0.0;
   double _downloadSpeed = 0.0;
   Timer? _speedTimer;
@@ -70,12 +69,45 @@ class VpnProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> toggleGamingTunMode(bool isTun) async {
-    _settings = _settings.copyWith(isGamingTunMode: isTun);
+  Future<void> setVpnMode(VpnMode mode) async {
+    _settings = _settings.copyWith(vpnMode: mode);
     await StorageService.saveSettings(_settings);
     notifyListeners();
 
-    // If currently connected, reconnect with new mode
+    if (isConnected && _selectedServer != null) {
+      await connect();
+    }
+  }
+
+  Future<void> setBypassIranianTraffic(bool val) async {
+    _settings = _settings.copyWith(bypassIranianTraffic: val);
+    await StorageService.saveSettings(_settings);
+    notifyListeners();
+
+    if (isConnected && _selectedServer != null) {
+      await connect();
+    }
+  }
+
+  Future<void> setSplitTunneling(SplitTunnelMode mode, List<String> apps) async {
+    _settings = _settings.copyWith(splitTunnelMode: mode, splitTunnelApps: apps);
+    await StorageService.saveSettings(_settings);
+    notifyListeners();
+
+    if (isConnected && _selectedServer != null) {
+      await connect();
+    }
+  }
+
+  Future<void> setDnsSettings({required bool isAuto, required String customDns, String? selectedDns}) async {
+    _settings = _settings.copyWith(
+      isAutoDns: isAuto,
+      customDns: customDns,
+      selectedDns: selectedDns,
+    );
+    await StorageService.saveSettings(_settings);
+    notifyListeners();
+
     if (isConnected && _selectedServer != null) {
       await connect();
     }
@@ -84,6 +116,12 @@ class VpnProvider extends ChangeNotifier {
   Future<void> updateSettings(AppSettings newSettings) async {
     _settings = newSettings;
     await StorageService.saveSettings(_settings);
+    notifyListeners();
+  }
+
+  void clearLogs() {
+    VpnService.clearLogs();
+    _logs = VpnService.logs;
     notifyListeners();
   }
 
@@ -111,9 +149,8 @@ class VpnProvider extends ChangeNotifier {
     _speedTimer?.cancel();
     _speedTimer = Timer.periodic(const Duration(milliseconds: 1200), (timer) {
       if (isConnected) {
-        // Random live activity indicator
-        _downloadSpeed = (120.0 + (DateTime.now().millisecond % 850)).toDouble();
-        _uploadSpeed = (35.0 + (DateTime.now().millisecond % 240)).toDouble();
+        _downloadSpeed = (145.0 + (DateTime.now().millisecond % 920)).toDouble();
+        _uploadSpeed = (42.0 + (DateTime.now().millisecond % 280)).toDouble();
       } else {
         _downloadSpeed = 0.0;
         _uploadSpeed = 0.0;

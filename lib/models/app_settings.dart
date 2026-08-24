@@ -1,20 +1,42 @@
+enum VpnMode {
+  tun, // Full Gaming TUN Mode (Wintun)
+  systemProxy, // Windows System Proxy (Browsers & Apps via HTTP/SOCKS)
+}
+
+enum SplitTunnelMode {
+  disabled,
+  inclusive, // Only proxy listed apps
+  exclusive, // Proxy all EXCEPT listed apps
+}
+
 class AppSettings {
-  final bool isGamingTunMode;
+  final VpnMode vpnMode;
   final bool autoStartOnBoot;
   final bool autoConnectOnLaunch;
+  final bool bypassIranianTraffic;
+  final bool isAutoDns;
   final String selectedDns; // "1.1.1.1", "8.8.8.8", "77.88.8.8"
-  final bool bypassDomesticIps;
+  final String customDns;
+  final SplitTunnelMode splitTunnelMode;
+  final List<String> splitTunnelApps;
   final int socksPort;
   final int httpPort;
   final String? subscriptionUrl;
   final String? lastSelectedServerId;
 
+  // Compatibility getter
+  bool get isGamingTunMode => vpnMode == VpnMode.tun;
+
   AppSettings({
-    this.isGamingTunMode = true,
+    this.vpnMode = VpnMode.tun,
     this.autoStartOnBoot = false,
     this.autoConnectOnLaunch = false,
+    this.bypassIranianTraffic = true,
+    this.isAutoDns = true,
     this.selectedDns = "1.1.1.1",
-    this.bypassDomesticIps = true,
+    this.customDns = "1.1.1.1",
+    this.splitTunnelMode = SplitTunnelMode.disabled,
+    this.splitTunnelApps = const ['steam.exe', 'discord.exe', 'cs2.exe', 'valorant.exe'],
     this.socksPort = 20808,
     this.httpPort = 20809,
     this.subscriptionUrl,
@@ -22,22 +44,30 @@ class AppSettings {
   });
 
   AppSettings copyWith({
-    bool? isGamingTunMode,
+    VpnMode? vpnMode,
     bool? autoStartOnBoot,
     bool? autoConnectOnLaunch,
+    bool? bypassIranianTraffic,
+    bool? isAutoDns,
     String? selectedDns,
-    bool? bypassDomesticIps,
+    String? customDns,
+    SplitTunnelMode? splitTunnelMode,
+    List<String>? splitTunnelApps,
     int? socksPort,
     int? httpPort,
     String? subscriptionUrl,
     String? lastSelectedServerId,
   }) {
     return AppSettings(
-      isGamingTunMode: isGamingTunMode ?? this.isGamingTunMode,
+      vpnMode: vpnMode ?? this.vpnMode,
       autoStartOnBoot: autoStartOnBoot ?? this.autoStartOnBoot,
       autoConnectOnLaunch: autoConnectOnLaunch ?? this.autoConnectOnLaunch,
+      bypassIranianTraffic: bypassIranianTraffic ?? this.bypassIranianTraffic,
+      isAutoDns: isAutoDns ?? this.isAutoDns,
       selectedDns: selectedDns ?? this.selectedDns,
-      bypassDomesticIps: bypassDomesticIps ?? this.bypassDomesticIps,
+      customDns: customDns ?? this.customDns,
+      splitTunnelMode: splitTunnelMode ?? this.splitTunnelMode,
+      splitTunnelApps: splitTunnelApps ?? this.splitTunnelApps,
       socksPort: socksPort ?? this.socksPort,
       httpPort: httpPort ?? this.httpPort,
       subscriptionUrl: subscriptionUrl ?? this.subscriptionUrl,
@@ -47,11 +77,15 @@ class AppSettings {
 
   Map<String, dynamic> toJson() {
     return {
-      'isGamingTunMode': isGamingTunMode,
+      'vpnMode': vpnMode.index,
       'autoStartOnBoot': autoStartOnBoot,
       'autoConnectOnLaunch': autoConnectOnLaunch,
+      'bypassIranianTraffic': bypassIranianTraffic,
+      'isAutoDns': isAutoDns,
       'selectedDns': selectedDns,
-      'bypassDomesticIps': bypassDomesticIps,
+      'customDns': customDns,
+      'splitTunnelMode': splitTunnelMode.index,
+      'splitTunnelApps': splitTunnelApps,
       'socksPort': socksPort,
       'httpPort': httpPort,
       'subscriptionUrl': subscriptionUrl,
@@ -61,11 +95,18 @@ class AppSettings {
 
   factory AppSettings.fromJson(Map<String, dynamic> json) {
     return AppSettings(
-      isGamingTunMode: json['isGamingTunMode'] as bool? ?? true,
+      vpnMode: json['vpnMode'] != null ? VpnMode.values[json['vpnMode'] as int] : VpnMode.tun,
       autoStartOnBoot: json['autoStartOnBoot'] as bool? ?? false,
       autoConnectOnLaunch: json['autoConnectOnLaunch'] as bool? ?? false,
+      bypassIranianTraffic: json['bypassIranianTraffic'] as bool? ?? true,
+      isAutoDns: json['isAutoDns'] as bool? ?? true,
       selectedDns: json['selectedDns'] as String? ?? "1.1.1.1",
-      bypassDomesticIps: json['bypassDomesticIps'] as bool? ?? true,
+      customDns: json['customDns'] as String? ?? "1.1.1.1",
+      splitTunnelMode: json['splitTunnelMode'] != null
+          ? SplitTunnelMode.values[json['splitTunnelMode'] as int]
+          : SplitTunnelMode.disabled,
+      splitTunnelApps: (json['splitTunnelApps'] as List<dynamic>?)?.map((e) => e.toString()).toList() ??
+          ['steam.exe', 'discord.exe', 'cs2.exe', 'valorant.exe'],
       socksPort: json['socksPort'] as int? ?? 20808,
       httpPort: json['httpPort'] as int? ?? 20809,
       subscriptionUrl: json['subscriptionUrl'] as String?,
