@@ -49,12 +49,6 @@ class ConfigGenerator {
       'tag': 'block',
     });
 
-    // DNS Outbound
-    outbounds.add({
-      'type': 'dns',
-      'tag': 'dns-out',
-    });
-
     // 4. DNS Configuration
     final activeDns = settings.isAutoDns ? settings.selectedDns : settings.customDns;
     final dns = {
@@ -96,7 +90,7 @@ class ConfigGenerator {
       },
       {
         'protocol': 'dns',
-        'outbound': 'dns-out',
+        'action': 'hijack-dns',
       },
       {
         'ip_is_private': true,
