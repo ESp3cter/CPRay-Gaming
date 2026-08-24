@@ -46,6 +46,9 @@ jobs:
           New-Item -ItemType Directory -Force -Path "assets" | Out-Null
           Copy-Item $coreExe.FullName -Destination "assets\sing-box.exe" -Force
 
+      - name: Set up Visual Studio Developer Environment
+        uses: ilammy/msvc-dev-cmd@v1
+
       - name: Build Flutter Windows Application
         run: flutter build windows --release
 
