@@ -49,7 +49,9 @@ class ConfigGenerator {
         'type': 'tun',
         'tag': 'tun-in',
         'interface_name': 'CPRay-Wintun',
-        'inet4_address': '172.19.0.1/30',
+        'address': [
+          '172.19.0.1/30',
+        ],
         'auto_route': true,
         'strict_route': true,
         'stack': 'mixed',
@@ -133,22 +135,16 @@ class ConfigGenerator {
         'process_name': settings.splitTunnelApps,
         'outbound': 'proxy',
       });
-      routeRules.add({
-        'outbound': 'direct',
-      });
     } else if (settings.splitTunnelMode == SplitTunnelMode.exclusive && settings.splitTunnelApps.isNotEmpty) {
       routeRules.add({
         'process_name': settings.splitTunnelApps,
         'outbound': 'direct',
       });
-      routeRules.add({
-        'outbound': 'proxy',
-      });
-    } else {
-      routeRules.add({
-        'outbound': 'proxy',
-      });
     }
+
+    final String finalOutbound = (settings.splitTunnelMode == SplitTunnelMode.inclusive && settings.splitTunnelApps.isNotEmpty)
+        ? 'direct'
+        : 'proxy';
 
     return {
       'log': {
@@ -160,6 +156,7 @@ class ConfigGenerator {
       'outbounds': outbounds,
       'route': {
         'rules': routeRules,
+        'final': finalOutbound,
         'auto_detect_interface': true,
       },
     };

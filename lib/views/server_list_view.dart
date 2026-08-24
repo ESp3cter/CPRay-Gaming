@@ -191,6 +191,14 @@ class _ServerListViewState extends State<ServerListView> {
           // Header & Action Bar
           Row(
             children: [
+              if (Navigator.canPop(context)) ...[
+                IconButton(
+                  icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF00D4FF), size: 24),
+                  tooltip: 'Back to Dashboard',
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+                const SizedBox(width: 8),
+              ],
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -354,6 +362,9 @@ class _ServerListViewState extends State<ServerListView> {
                           vpnProvider.setSelectedServer(server);
                           if (vpnProvider.isConnected) {
                             vpnProvider.connect();
+                          }
+                          if (Navigator.canPop(context)) {
+                            Navigator.of(context).pop();
                           }
                         },
                         onTestPing: () => serverProvider.testSinglePing(server),

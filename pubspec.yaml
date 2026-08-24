@@ -1,7 +1,7 @@
 name: cpray_gaming
 description: "A modern low-latency VPN and gaming tunnel desktop client for Windows."
 publish_to: 'none'
-version: 0.0.6+1
+version: 0.0.7+1
 
 environment:
   sdk: '>=3.2.0 <4.0.0'
