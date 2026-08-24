@@ -1,39 +1,63 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
+import '../models/game_target.dart';
 import '../models/server_config.dart';
+import '../services/audio_feedback_service.dart';
+import '../services/game_ping_service.dart';
 import '../services/ping_service.dart';
 import '../services/storage_service.dart';
 import '../services/subscription_service.dart';
 
 class ServerProvider extends ChangeNotifier {
   List<ServerConfig> _servers = [];
+  String? _subscriptionUrl;
   bool _isLoading = false;
   String? _errorMessage;
   String _searchQuery = '';
-  String? _subscriptionUrl;
 
-  List<ServerConfig> get servers => _servers;
+  List<GameTarget> _gameTargets = List.from(GamePingService.defaultTargets);
+  Timer? _autoHealthTimer;
+
+  List<ServerConfig> get servers => List.unmodifiable(_servers);
+  String? get subscriptionUrl => _subscriptionUrl;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   String get searchQuery => _searchQuery;
-  String? get subscriptionUrl => _subscriptionUrl;
+  List<GameTarget> get gameTargets => List.unmodifiable(_gameTargets);
 
   List<ServerConfig> get filteredServers {
-    if (_searchQuery.isEmpty) return _servers;
+    if (_searchQuery.trim().isEmpty) return _servers;
+    final query = _searchQuery.toLowerCase();
     return _servers.where((s) {
-      return s.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          s.protocol.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          s.server.toLowerCase().contains(_searchQuery.toLowerCase());
+      return s.name.toLowerCase().contains(query) ||
+          s.server.toLowerCase().contains(query) ||
+          s.protocol.toLowerCase().contains(query);
     }).toList();
   }
 
   ServerProvider() {
-    _init();
+    _loadInitialData();
+    _startBackgroundAutoHealth();
   }
 
-  Future<void> _init() async {
+  Future<void> _loadInitialData() async {
     _servers = await StorageService.loadServers();
-    _subscriptionUrl = await StorageService.loadSubscriptionUrl();
+    final settings = await StorageService.loadSettings();
+    _subscriptionUrl = settings.subscriptionUrl;
     notifyListeners();
+
+    if (_servers.isNotEmpty) {
+      testAllPings();
+    }
+  }
+
+  void _startBackgroundAutoHealth() {
+    _autoHealthTimer?.cancel();
+    _autoHealthTimer = Timer.periodic(const Duration(minutes: 15), (timer) {
+      if (_servers.isNotEmpty) {
+        testAllPings();
+      }
+    });
   }
 
   void setSearchQuery(String query) {
@@ -51,58 +75,97 @@ class ServerProvider extends ChangeNotifier {
     try {
       final fetched = await SubscriptionService.fetchSubscription(url);
       if (fetched.isEmpty) {
-        _errorMessage = 'No valid VPN nodes found in subscription link.';
+        _errorMessage = 'No valid servers found in this subscription URL.';
       } else {
         _servers = fetched;
-        _subscriptionUrl = url.trim();
-        await StorageService.saveSubscriptionUrl(_subscriptionUrl!);
+        _subscriptionUrl = url;
         await StorageService.saveServers(_servers);
-        
-        // Auto test ping on all fetched servers
+
+        final settings = await StorageService.loadSettings();
+        await StorageService.saveSettings(settings.copyWith(subscriptionUrl: url));
+
+        AudioFeedbackService.playPingSound();
         testAllPings();
       }
     } catch (e) {
-      _errorMessage = 'Failed to update subscription: ${e.toString().replaceAll('Exception: ', '')}';
+      _errorMessage = 'Failed to fetch subscription: $e';
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
 
-  Future<bool> addManualConfig(String rawConfig) async {
-    final server = SubscriptionService.parseUri(rawConfig.trim(), 'manual_${DateTime.now().millisecondsSinceEpoch}');
-    if (server != null) {
-      _servers.insert(0, server);
+  Future<bool> addManualConfig(String configLink) async {
+    final parsed = SubscriptionService.parseSingleConfig(configLink);
+    if (parsed != null) {
+      _servers.insert(0, parsed);
       await StorageService.saveServers(_servers);
+      testSinglePing(parsed);
       notifyListeners();
-      PingService.testServerPing(server).then((_) => notifyListeners());
       return true;
     }
     return false;
-  }
-
-  Future<void> testAllPings() async {
-    await PingService.testAllServers(_servers, onProgress: () {
-      notifyListeners();
-    });
-    // Sort servers by lowest ping (placing timed-out / -1 at end)
-    _servers.sort((a, b) {
-      final pingA = (a.ping != null && a.ping! > 0) ? a.ping! : 99999;
-      final pingB = (b.ping != null && b.ping! > 0) ? b.ping! : 99999;
-      return pingA.compareTo(pingB);
-    });
-    await StorageService.saveServers(_servers);
-    notifyListeners();
-  }
-
-  Future<void> testSinglePing(ServerConfig server) async {
-    await PingService.testServerPing(server);
-    notifyListeners();
   }
 
   Future<void> deleteServer(String id) async {
     _servers.removeWhere((s) => s.id == id);
     await StorageService.saveServers(_servers);
     notifyListeners();
+  }
+
+  Future<void> testAllPings() async {
+    final updated = await PingService.testAllPings(_servers);
+    // Sort fastest servers to top
+    updated.sort((a, b) {
+      final pA = a.ping ?? 9999;
+      final pB = b.ping ?? 9999;
+      return pA.compareTo(pB);
+    });
+    _servers = updated;
+    await StorageService.saveServers(_servers);
+    notifyListeners();
+  }
+
+  Future<void> testSinglePing(ServerConfig server) async {
+    final index = _servers.indexWhere((s) => s.id == server.id);
+    if (index == -1) return;
+
+    _servers[index] = _servers[index].copyWith(isTesting: true);
+    notifyListeners();
+
+    final ping = await PingService.testServerPing(server);
+    _servers[index] = _servers[index].copyWith(ping: ping, isTesting: false);
+
+    // Re-sort after ping
+    _servers.sort((a, b) {
+      final pA = a.ping ?? 9999;
+      final pB = b.ping ?? 9999;
+      return pA.compareTo(pB);
+    });
+
+    await StorageService.saveServers(_servers);
+    notifyListeners();
+  }
+
+  Future<void> testGameTargetPing(GameTarget target) async {
+    target.isTesting = true;
+    notifyListeners();
+
+    final ping = await GamePingService.testTargetPing(target);
+    target.ping = ping;
+    target.isTesting = false;
+    notifyListeners();
+  }
+
+  Future<void> testAllGameTargets() async {
+    for (final target in _gameTargets) {
+      testGameTargetPing(target);
+    }
+  }
+
+  @override
+  void dispose() {
+    _autoHealthTimer?.cancel();
+    super.dispose();
   }
 }

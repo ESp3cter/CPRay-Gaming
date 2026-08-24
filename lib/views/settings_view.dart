@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/app_settings.dart';
 import '../providers/vpn_provider.dart';
+import '../services/localization_service.dart';
 import '../services/updater_service.dart';
 import '../widgets/update_dialog.dart';
 
@@ -22,6 +23,13 @@ class _SettingsViewState extends State<SettingsView> {
     '9.9.9.9',
     '77.88.8.8',
   ];
+
+  final Map<String, String> _antiSanctionNames = {
+    'radar': 'Radar.game (10.202.10.10)',
+    'electro': 'Electro DNS (78.157.42.101)',
+    'shecan': 'Shecan (178.22.122.100)',
+    'dns4s': 'DNS4S (4.2.2.4)',
+  };
 
   @override
   void initState() {
@@ -61,248 +69,241 @@ class _SettingsViewState extends State<SettingsView> {
     final vpnProvider = context.watch<VpnProvider>();
     final settings = vpnProvider.settings;
 
-    return Container(
-      color: const Color(0xFF090B10),
-      padding: const EdgeInsets.all(28),
-      child: ListView(
-        children: [
-          const Text(
-            'Settings & Routing',
-            style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 4),
-          const Text(
-            'Fine-tune your tunnel, domestic bypass, and DNS servers',
-            style: TextStyle(color: Color(0xFF6B7A94), fontSize: 12),
-          ),
-          const SizedBox(height: 24),
+    return Directionality(
+      textDirection: LocalizationService.direction,
+      child: Container(
+        color: const Color(0xFF090B10),
+        padding: const EdgeInsets.all(28),
+        child: ListView(
+          children: [
+            Text(
+              LocalizationService.tr('settings'),
+              style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'Fine-tune your tunnel, anti-sanction resolvers, sound effects, and preferences',
+              style: TextStyle(color: Color(0xFF6B7A94), fontSize: 12),
+            ),
+            const SizedBox(height: 24),
 
-          _buildSectionHeader('TUNNEL & OPERATION MODE'),
-          Row(
-            children: [
-              Expanded(
-                child: _buildSelectCard(
-                  title: 'Gaming TUN Mode (Wintun)',
-                  subtitle: 'Direct virtual adapter. 100% of game UDP packets & system apps.',
-                  icon: Icons.sports_esports_rounded,
-                  isSelected: settings.vpnMode == VpnMode.tun,
-                  accentColor: const Color(0xFF00FF88),
-                  onTap: () => vpnProvider.setVpnMode(VpnMode.tun),
-                ),
+            _buildSectionHeader('LANGUAGE & REGION / زبان'),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+              decoration: BoxDecoration(
+                color: const Color(0xFF10131E),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFF1E2438)),
               ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: _buildSelectCard(
-                  title: 'System Proxy Mode',
-                  subtitle: 'Lightweight web proxy. Routes browsers & system HTTP without adapter.',
-                  icon: Icons.public_rounded,
-                  isSelected: settings.vpnMode == VpnMode.systemProxy,
-                  accentColor: const Color(0xFF00D4FF),
-                  onTap: () => vpnProvider.setVpnMode(VpnMode.systemProxy),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF00D4FF).withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.language_rounded, color: Color(0xFF00D4FF), size: 20),
+                  ),
+                  const SizedBox(width: 14),
+                  const Expanded(
+                    child: Text(
+                      'Language / زبان برنامه',
+                      style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                  DropdownButton<String>(
+                    value: settings.language,
+                    dropdownColor: const Color(0xFF141726),
+                    underline: const SizedBox(),
+                    style: const TextStyle(color: Color(0xFF00D4FF), fontWeight: FontWeight.w800),
+                    items: const [
+                      DropdownMenuItem(value: 'en', child: Text('🇺🇸 English')),
+                      DropdownMenuItem(value: 'fa', child: Text('🇮🇷 فارسی (Persian)')),
+                    ],
+                    onChanged: (val) {
+                      if (val != null) vpnProvider.setLanguage(val);
+                    },
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 24),
+            _buildSectionHeader('TUNNEL & OPERATION MODE'),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildSelectCard(
+                    title: 'Gaming TUN Mode (Wintun)',
+                    subtitle: 'Direct virtual adapter. 100% of game UDP packets & system apps.',
+                    icon: Icons.sports_esports_rounded,
+                    isSelected: settings.vpnMode == VpnMode.tun,
+                    accentColor: const Color(0xFF00FF88),
+                    onTap: () => vpnProvider.setVpnMode(VpnMode.tun),
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: _buildSelectCard(
+                    title: 'System Proxy Mode',
+                    subtitle: 'Lightweight web proxy. Routes browsers & system HTTP without adapter.',
+                    icon: Icons.public_rounded,
+                    isSelected: settings.vpnMode == VpnMode.systemProxy,
+                    accentColor: const Color(0xFF00D4FF),
+                    onTap: () => vpnProvider.setVpnMode(VpnMode.systemProxy),
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 24),
+            _buildSectionHeader('ANTI-SANCTION DNS GAMING ENGINE'),
+            _buildSwitchTile(
+              title: 'Anti-Sanction DNS Mode',
+              subtitle: '0-Latency direct ISP connection for sanctioned games (Valorant, League, Epic Games)',
+              value: settings.antiSanctionMode,
+              icon: Icons.shield_rounded,
+              activeColor: const Color(0xFF9D00FF),
+              onChanged: (val) => vpnProvider.setAntiSanctionMode(val),
+            ),
+            if (settings.antiSanctionMode) ...[
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF141828),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0xFF9D00FF).withOpacity(0.4)),
+                ),
+                child: Row(
+                  children: [
+                    const Text(
+                      'Anti-Sanction Provider:',
+                      style: TextStyle(color: Color(0xFF8C9BAE), fontSize: 12),
+                    ),
+                    const SizedBox(width: 14),
+                    DropdownButton<String>(
+                      value: settings.antiSanctionProvider,
+                      dropdownColor: const Color(0xFF141726),
+                      underline: const SizedBox(),
+                      style: const TextStyle(color: Color(0xFF00FF88), fontWeight: FontWeight.w800),
+                      items: _antiSanctionNames.entries.map((e) {
+                        return DropdownMenuItem(value: e.key, child: Text(e.value));
+                      }).toList(),
+                      onChanged: (val) {
+                        if (val != null) vpnProvider.setAntiSanctionMode(true, provider: val);
+                      },
+                    ),
+                  ],
                 ),
               ),
             ],
-          ),
 
-          const SizedBox(height: 24),
-          _buildSectionHeader('DOMESTIC ROUTING & BYPASS'),
-          _buildSwitchTile(
-            title: 'Bypass Iranian Websites & IPs',
-            subtitle: 'Directly routes local banking, Snapp, Varzesh3, and all .ir domains outside VPN',
-            value: settings.bypassIranianTraffic,
-            icon: Icons.alt_route_rounded,
-            activeColor: const Color(0xFF00D4FF),
-            onChanged: (val) => vpnProvider.setBypassIranianTraffic(val),
-          ),
-
-          const SizedBox(height: 24),
-          _buildSectionHeader('DNS RESOLUTION ENGINE'),
-          Container(
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: const Color(0xFF10131E),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFF1E2438)),
+            const SizedBox(height: 24),
+            _buildSectionHeader('DOMESTIC ROUTING & BYPASS'),
+            _buildSwitchTile(
+              title: LocalizationService.tr('iran_bypass'),
+              subtitle: LocalizationService.tr('iran_bypass_desc'),
+              value: settings.bypassIranianTraffic,
+              icon: Icons.alt_route_rounded,
+              activeColor: const Color(0xFF00D4FF),
+              onChanged: (val) => vpnProvider.setBypassIranianTraffic(val),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: const [
-                        Icon(Icons.dns_rounded, color: Color(0xFF9D00FF), size: 20),
-                        SizedBox(width: 10),
-                        Text(
-                          'Automatic Gaming DNS',
-                          style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700),
-                        ),
-                      ],
-                    ),
-                    Switch(
-                      value: settings.isAutoDns,
-                      onChanged: (val) {
-                        vpnProvider.setDnsSettings(
-                          isAuto: val,
-                          customDns: _customDnsController.text,
-                        );
-                      },
-                      activeColor: const Color(0xFF9D00FF),
-                      activeTrackColor: const Color(0xFF9D00FF).withOpacity(0.3),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                if (settings.isAutoDns) ...[
-                  Row(
-                    children: [
-                      const Text(
-                        'Preset DNS Server:',
-                        style: TextStyle(color: Color(0xFF7E8B9E), fontSize: 12),
+
+            const SizedBox(height: 24),
+            _buildSectionHeader('AUDIO & GAMING STABILITY'),
+            _buildSwitchTile(
+              title: LocalizationService.tr('sound_effects'),
+              subtitle: 'Sci-fi audio chimes on tunnel connect, disconnect, and server switch',
+              value: settings.soundEffectsEnabled,
+              icon: Icons.volume_up_rounded,
+              activeColor: const Color(0xFF00D4FF),
+              onChanged: (val) => vpnProvider.setSoundEffects(val),
+            ),
+            const SizedBox(height: 10),
+            _buildSwitchTile(
+              title: LocalizationService.tr('auto_failover'),
+              subtitle: 'Automatically hot-swap to the lowest-ping backup node if connection drops',
+              value: settings.autoFailoverEnabled,
+              icon: Icons.sync_problem_rounded,
+              activeColor: const Color(0xFF00FF88),
+              onChanged: (val) => vpnProvider.setAutoFailover(val),
+            ),
+
+            const SizedBox(height: 24),
+            _buildSectionHeader('APPLICATION PREFERENCES'),
+            _buildSwitchTile(
+              title: 'Auto-Start on Windows Boot',
+              subtitle: 'Launch CPRay Gaming automatically when you start your PC',
+              value: settings.autoStartOnBoot,
+              icon: Icons.power_rounded,
+              activeColor: const Color(0xFFFFB300),
+              onChanged: (val) {
+                vpnProvider.updateSettings(settings.copyWith(autoStartOnBoot: val));
+              },
+            ),
+            const SizedBox(height: 10),
+            _buildSwitchTile(
+              title: 'Auto-Connect on Launch',
+              subtitle: 'Automatically connect to the last selected server when app starts',
+              value: settings.autoConnectOnLaunch,
+              icon: Icons.flash_on_rounded,
+              activeColor: const Color(0xFF00FF88),
+              onChanged: (val) {
+                vpnProvider.updateSettings(settings.copyWith(autoConnectOnLaunch: val));
+              },
+            ),
+
+            const SizedBox(height: 20),
+
+            // About Card
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: const Color(0xFF10131E),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFF1E2438)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: const [
+                      Text(
+                        'CPRay-Gaming Desktop Suite',
+                        style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w800),
                       ),
-                      const SizedBox(width: 14),
-                      DropdownButton<String>(
-                        value: settings.selectedDns,
-                        dropdownColor: const Color(0xFF141726),
-                        underline: const SizedBox(),
-                        style: const TextStyle(color: Color(0xFF00D4FF), fontWeight: FontWeight.w700),
-                        items: _autoDnsPresets.map((dns) {
-                          return DropdownMenuItem(value: dns, child: Text(dns));
-                        }).toList(),
-                        onChanged: (val) {
-                          if (val != null) {
-                            vpnProvider.setDnsSettings(
-                              isAuto: true,
-                              customDns: _customDnsController.text,
-                              selectedDns: val,
-                            );
-                          }
-                        },
+                      SizedBox(height: 2),
+                      Text(
+                        'Version 0.1.0 (Sing-box Core 1.13+)',
+                        style: TextStyle(color: Color(0xFF6B7A94), fontSize: 12),
                       ),
                     ],
                   ),
-                ] else ...[
-                  const Text(
-                    'Manual Custom DNS Server:',
-                    style: TextStyle(color: Color(0xFF7E8B9E), fontSize: 12),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _customDnsController,
-                          style: const TextStyle(color: Colors.white, fontSize: 13),
-                          decoration: InputDecoration(
-                            hintText: 'e.g. 77.88.8.8 or 9.9.9.9',
-                            hintStyle: const TextStyle(color: Color(0xFF5A6678)),
-                            filled: true,
-                            fillColor: const Color(0xFF161A29),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: const BorderSide(color: Color(0xFF242A42)),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      ElevatedButton(
-                        onPressed: () {
-                          vpnProvider.setDnsSettings(
-                            isAuto: false,
-                            customDns: _customDnsController.text.trim(),
-                          );
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Custom DNS saved successfully!')),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF9D00FF),
-                          foregroundColor: Colors.white,
-                        ),
-                        child: const Text('Save DNS'),
-                      ),
-                    ],
+                  ElevatedButton.icon(
+                    onPressed: _isCheckingUpdate ? null : _manualCheckUpdate,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF00D4FF),
+                      foregroundColor: const Color(0xFF090B10),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    icon: _isCheckingUpdate
+                        ? const SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF090B10)),
+                          )
+                        : const Icon(Icons.refresh_rounded, size: 16),
+                    label: const Text('Check Update', style: TextStyle(fontWeight: FontWeight.w800)),
                   ),
                 ],
-              ],
+              ),
             ),
-          ),
-
-          const SizedBox(height: 24),
-          _buildSectionHeader('APPLICATION PREFERENCES'),
-          _buildSwitchTile(
-            title: 'Auto-Start on Windows Boot',
-            subtitle: 'Launch CPRay Gaming automatically when you start your PC',
-            value: settings.autoStartOnBoot,
-            icon: Icons.power_rounded,
-            activeColor: const Color(0xFFFFB300),
-            onChanged: (val) {
-              vpnProvider.updateSettings(settings.copyWith(autoStartOnBoot: val));
-            },
-          ),
-          const SizedBox(height: 10),
-          _buildSwitchTile(
-            title: 'Auto-Connect on Launch',
-            subtitle: 'Automatically connect to the last selected server when app starts',
-            value: settings.autoConnectOnLaunch,
-            icon: Icons.flash_on_rounded,
-            activeColor: const Color(0xFF00FF88),
-            onChanged: (val) {
-              vpnProvider.updateSettings(settings.copyWith(autoConnectOnLaunch: val));
-            },
-          ),
-
-          const SizedBox(height: 20),
-
-          // About & Force Update Card
-          Container(
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: const Color(0xFF10131E),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFF1E2438)),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
-                    Text(
-                      'CPRay-Gaming Desktop',
-                      style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w800),
-                    ),
-                    SizedBox(height: 2),
-                    Text(
-                      'Version 0.0.7 (Sing-box Core 1.13+)',
-                      style: TextStyle(color: Color(0xFF6B7A94), fontSize: 12),
-                    ),
-                  ],
-                ),
-                ElevatedButton.icon(
-                  onPressed: _isCheckingUpdate ? null : _manualCheckUpdate,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF00D4FF),
-                    foregroundColor: const Color(0xFF090B10),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
-                  icon: _isCheckingUpdate
-                      ? const SizedBox(
-                          width: 14,
-                          height: 14,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF090B10)),
-                        )
-                      : const Icon(Icons.refresh_rounded, size: 16),
-                  label: const Text('Check Update', style: TextStyle(fontWeight: FontWeight.w800)),
-                ),
-              ],
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -29,13 +29,20 @@ class ConfigGenerator {
     'tejaratbank.ir',
   ];
 
+  static final Map<String, String> antiSanctionDnsMap = {
+    'radar': '10.202.10.10',
+    'electro': '78.157.42.101',
+    'shecan': '178.22.122.100',
+    'dns4s': '4.2.2.4',
+  };
+
   static Map<String, dynamic> generateSingboxConfig({
     required ServerConfig server,
     required AppSettings settings,
   }) {
     final List<Map<String, dynamic>> inbounds = [];
 
-    // 1. Mixed inbound (SOCKS5 & HTTP) - Clean Sing-box 1.13+ format
+    // 1. Mixed inbound (SOCKS5 & HTTP)
     inbounds.add({
       'type': 'mixed',
       'tag': 'mixed-in',
@@ -44,7 +51,7 @@ class ConfigGenerator {
     });
 
     // 2. Gaming TUN Mode (Wintun)
-    if (settings.vpnMode == VpnMode.tun) {
+    if (settings.vpnMode == VpnMode.tun || settings.vpnMode == VpnMode.antiSanctionOnly) {
       inbounds.add({
         'type': 'tun',
         'tag': 'tun-in',
@@ -78,15 +85,19 @@ class ConfigGenerator {
     });
 
     // 4. DNS Configuration
-    final activeDns = settings.isAutoDns ? settings.selectedDns : settings.customDns;
+    String primaryDns = settings.isAutoDns ? settings.selectedDns : settings.customDns;
+    if (settings.antiSanctionMode) {
+      primaryDns = antiSanctionDnsMap[settings.antiSanctionProvider] ?? '10.202.10.10';
+    }
+
     final dns = {
       'servers': [
         {
           'tag': 'remote-dns',
           'type': 'udp',
-          'server': activeDns,
+          'server': primaryDns,
           'server_port': 53,
-          'detour': 'proxy',
+          'detour': settings.antiSanctionMode ? 'direct' : 'proxy',
         },
         {
           'tag': 'direct-dns',
@@ -144,7 +155,7 @@ class ConfigGenerator {
 
     final String finalOutbound = (settings.splitTunnelMode == SplitTunnelMode.inclusive && settings.splitTunnelApps.isNotEmpty)
         ? 'direct'
-        : 'proxy';
+        : (settings.vpnMode == VpnMode.antiSanctionOnly ? 'direct' : 'proxy');
 
     return {
       'log': {
