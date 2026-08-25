@@ -94,15 +94,17 @@ class ConfigGenerator {
       'servers': [
         {
           'tag': 'remote-dns',
-          'type': 'udp',
-          'server': primaryDns,
-          'server_port': 53,
+          'address': primaryDns,
           'detour': settings.antiSanctionMode ? 'direct' : 'proxy',
         },
         {
           'tag': 'direct-dns',
-          'type': 'local',
+          'address': '8.8.8.8',
           'detour': 'direct',
+        },
+        {
+          'tag': 'local-dns',
+          'address': 'local',
         }
       ],
       'rules': [

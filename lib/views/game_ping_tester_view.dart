@@ -53,10 +53,15 @@ class _GamePingTesterViewState extends State<GamePingTesterView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Header
-          Row(
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 12,
+            runSpacing: 12,
             children: [
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     LocalizationService.tr('game_ping_tester'),
@@ -69,17 +74,16 @@ class _GamePingTesterViewState extends State<GamePingTesterView> {
                   ),
                 ],
               ),
-              const Spacer(),
               ElevatedButton.icon(
                 onPressed: () => serverProvider.testAllGameTargets(),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF00D4FF),
                   foregroundColor: const Color(0xFF090B10),
-                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
-                icon: const Icon(Icons.bolt_rounded, size: 18),
-                label: const Text('Test All 100 Games', style: TextStyle(fontWeight: FontWeight.w800)),
+                icon: const Icon(Icons.bolt_rounded, size: 16),
+                label: const Text('Test All 100 Games', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12)),
               ),
             ],
           ),

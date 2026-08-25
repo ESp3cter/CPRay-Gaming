@@ -191,114 +191,126 @@ class _ServerListViewState extends State<ServerListView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Header & Action Bar
-          Row(
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 12,
+            runSpacing: 12,
             children: [
-              if (Navigator.canPop(context)) ...[
-                IconButton(
-                  icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF00D4FF), size: 24),
-                  tooltip: 'Back to Dashboard',
-                  onPressed: () => Navigator.of(context).pop(),
-                ),
-                const SizedBox(width: 8),
-              ],
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text(
-                    'Servers & Gaming Nodes',
-                    style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${serverProvider.servers.length} nodes loaded • Smart Gaming Intelligence Analyzer',
-                    style: const TextStyle(color: Color(0xFF6B7A94), fontSize: 12),
+                  if (Navigator.canPop(context)) ...[
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF00D4FF), size: 24),
+                      tooltip: 'Back to Dashboard',
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text(
+                        'Servers & Gaming Nodes',
+                        style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${serverProvider.servers.length} nodes loaded • Smart Gaming Intelligence Analyzer',
+                        style: const TextStyle(color: Color(0xFF6B7A94), fontSize: 12),
+                      ),
+                    ],
                   ),
                 ],
               ),
-              const Spacer(),
-              // Auto-Pick Best Gaming Node Button
-              if (bestGamingServer != null)
-                ElevatedButton.icon(
-                  onPressed: () {
-                    vpnProvider.setSelectedServer(bestGamingServer);
-                    if (vpnProvider.isConnected) {
-                      vpnProvider.connect();
-                    }
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('👑 Selected Best Gaming Node: ${bestGamingServer!.name}')),
-                    );
-                    if (Navigator.canPop(context)) {
-                      Navigator.of(context).pop();
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF00FF88),
-                    foregroundColor: const Color(0xFF090B10),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  // Auto-Pick Best Gaming Node Button
+                  if (bestGamingServer != null)
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        vpnProvider.setSelectedServer(bestGamingServer);
+                        if (vpnProvider.isConnected) {
+                          vpnProvider.connect();
+                        }
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('👑 Selected Best Gaming Node: ${bestGamingServer!.name}')),
+                        );
+                        if (Navigator.canPop(context)) {
+                          Navigator.of(context).pop();
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF00FF88),
+                        foregroundColor: const Color(0xFF090B10),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      icon: const Icon(Icons.auto_awesome_rounded, size: 16),
+                      label: const Text('Auto-Pick Best Node', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12)),
+                    ),
+                  // Ping Test All Button
+                  ElevatedButton.icon(
+                    onPressed: () => serverProvider.testAllPings(),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF141A2C),
+                      foregroundColor: const Color(0xFF00FF88),
+                      side: const BorderSide(color: Color(0xFF00FF88), width: 1.2),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    icon: const Icon(Icons.bolt_rounded, size: 16),
+                    label: const Text('Test All Pings', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12)),
                   ),
-                  icon: const Icon(Icons.auto_awesome_rounded, size: 18),
-                  label: const Text('Auto-Pick Best Node', style: TextStyle(fontWeight: FontWeight.w800)),
-                ),
-              const SizedBox(width: 10),
-              // Ping Test All Button
-              ElevatedButton.icon(
-                onPressed: () => serverProvider.testAllPings(),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF141A2C),
-                  foregroundColor: const Color(0xFF00FF88),
-                  side: const BorderSide(color: Color(0xFF00FF88), width: 1.2),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-                icon: const Icon(Icons.bolt_rounded, size: 18),
-                label: const Text('Test All Pings', style: TextStyle(fontWeight: FontWeight.w800)),
-              ),
-              const SizedBox(width: 10),
-              // Fast Refresh Sub Button
-              ElevatedButton.icon(
-                onPressed: () async {
-                  final url = serverProvider.subscriptionUrl;
-                  if (url != null && url.isNotEmpty) {
-                    await serverProvider.updateSubscription(url);
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Subscription nodes refreshed successfully!')),
-                      );
-                    }
-                  } else {
-                    _showAddSubscriptionDialog(context);
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF00D4FF),
-                  foregroundColor: const Color(0xFF090B10),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-                icon: Icon(
-                  Icons.sync_rounded,
-                  size: 18,
-                  color: serverProvider.isLoading ? const Color(0xFFFFB300) : const Color(0xFF090B10),
-                ),
-                label: Text(
-                  serverProvider.isLoading ? 'Updating...' : 'Update Subscription',
-                  style: const TextStyle(fontWeight: FontWeight.w800),
-                ),
-              ),
-              const SizedBox(width: 6),
-              // Change Sub URL Button
-              IconButton(
-                icon: const Icon(Icons.link_rounded, color: Color(0xFF00D4FF), size: 22),
-                tooltip: 'Change / Set Subscription URL',
-                onPressed: () => _showAddSubscriptionDialog(context),
-              ),
-              const SizedBox(width: 6),
-              // Add Node Button
-              IconButton(
-                icon: const Icon(Icons.add_circle_outline_rounded, color: Color(0xFF9D00FF), size: 28),
-                tooltip: 'Add Single Config',
-                onPressed: () => _showManualAddDialog(context),
+                  // Fast Refresh Sub Button
+                  ElevatedButton.icon(
+                    onPressed: () async {
+                      final url = serverProvider.subscriptionUrl;
+                      if (url != null && url.isNotEmpty) {
+                        await serverProvider.updateSubscription(url);
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Subscription nodes refreshed successfully!')),
+                          );
+                        }
+                      } else {
+                        _showAddSubscriptionDialog(context);
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF00D4FF),
+                      foregroundColor: const Color(0xFF090B10),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    icon: Icon(
+                      Icons.sync_rounded,
+                      size: 16,
+                      color: serverProvider.isLoading ? const Color(0xFFFFB300) : const Color(0xFF090B10),
+                    ),
+                    label: Text(
+                      serverProvider.isLoading ? 'Updating...' : 'Update Subscription',
+                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12),
+                    ),
+                  ),
+                  // Change Sub URL Button
+                  IconButton(
+                    icon: const Icon(Icons.link_rounded, color: Color(0xFF00D4FF), size: 22),
+                    tooltip: 'Change / Set Subscription URL',
+                    onPressed: () => _showAddSubscriptionDialog(context),
+                  ),
+                  // Add Node Button
+                  IconButton(
+                    icon: const Icon(Icons.add_circle_outline_rounded, color: Color(0xFF9D00FF), size: 26),
+                    tooltip: 'Add Single Config',
+                    onPressed: () => _showManualAddDialog(context),
+                  ),
+                ],
               ),
             ],
           ),

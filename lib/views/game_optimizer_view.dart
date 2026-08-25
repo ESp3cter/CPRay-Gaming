@@ -110,10 +110,15 @@ class _GameOptimizerViewState extends State<GameOptimizerView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Header
-          Row(
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 12,
+            runSpacing: 12,
             children: [
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     LocalizationService.tr('game_optimizer'),
@@ -126,18 +131,17 @@ class _GameOptimizerViewState extends State<GameOptimizerView> {
                   ),
                 ],
               ),
-              const Spacer(),
               ElevatedButton.icon(
                 onPressed: () => _showAddCustomGameDialog(context),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF141A2C),
                   foregroundColor: const Color(0xFF00FF88),
                   side: const BorderSide(color: Color(0xFF00FF88), width: 1.2),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
-                icon: const Icon(Icons.add_rounded, size: 18),
-                label: const Text('Add Custom Game (.exe)', style: TextStyle(fontWeight: FontWeight.w800)),
+                icon: const Icon(Icons.add_rounded, size: 16),
+                label: const Text('Add Custom Game (.exe)', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12)),
               ),
             ],
           ),
