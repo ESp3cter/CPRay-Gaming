@@ -1,6 +1,6 @@
 ; Script generated for CPRay Gaming Inno Setup Installer
 #define MyAppName "CPRay Gaming"
-#define MyAppVersion "0.1.1"
+#define MyAppVersion "0.2.0"
 #define MyAppPublisher "CPRay Team"
 #define MyAppURL "https://github.com/ESp3cter/CPRay-Gaming"
 #define MyAppExeName "cpray_gaming.exe"

@@ -55,6 +55,72 @@ class ServerConfig {
     this.isTestingPing = false,
   });
 
+  bool get isUdpCapable {
+    final p = protocol.toLowerCase();
+    return p == 'hysteria2' || p == 'hy2' || p == 'tuic' || p == 'wireguard' || p == 'vless' || p == 'shadowsocks';
+  }
+
+  int get gamingScore {
+    if (ping == null || ping! <= 0) return 0;
+
+    int score = 0;
+
+    // Latency Score (Up to 55 points)
+    if (ping! < 50) {
+      score += 55;
+    } else if (ping! < 80) {
+      score += 48;
+    } else if (ping! < 110) {
+      score += 38;
+    } else if (ping! < 150) {
+      score += 25;
+    } else {
+      score += 10;
+    }
+
+    // Protocol Score (Up to 30 points)
+    final p = protocol.toLowerCase();
+    if (p == 'hysteria2' || p == 'hy2' || p == 'tuic') {
+      score += 30; // UDP-based BBR congestion control
+    } else if (p == 'vless' && security == 'reality') {
+      score += 26; // Direct TLS without web proxy overhead
+    } else if (p == 'vless') {
+      score += 22;
+    } else if (p == 'trojan' || p == 'shadowsocks') {
+      score += 18;
+    } else {
+      score += 10;
+    }
+
+    // Network Transport Score (Up to 15 points)
+    final net = (network ?? 'tcp').toLowerCase();
+    if (net == 'grpc' || net == 'tcp') {
+      score += 15; // Low packet overhead
+    } else if (net == 'httpupgrade') {
+      score += 10;
+    } else {
+      score += 5; // WebSocket (more header overhead)
+    }
+
+    return score.clamp(0, 100);
+  }
+
+  String get gamingGrade {
+    final s = gamingScore;
+    if (s >= 85) return 'S+';
+    if (s >= 70) return 'A';
+    if (s >= 50) return 'B';
+    return 'C';
+  }
+
+  String get gamingRecommendation {
+    final g = gamingGrade;
+    if (g == 'S+') return '👑 Best For Gaming (Ultra Low Jitter & UDP)';
+    if (g == 'A') return '⚡ Competitive Gaming Grade';
+    if (g == 'B') return '🎮 Playable Casual Gaming';
+    return '🌐 Web Browsing / Download Only';
+  }
+
   ServerConfig copyWith({
     String? id,
     String? name,

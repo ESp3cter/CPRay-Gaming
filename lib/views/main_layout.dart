@@ -9,8 +9,8 @@ import '../services/updater_service.dart';
 import '../services/vpn_service.dart';
 import '../widgets/update_dialog.dart';
 import 'dashboard_view.dart';
-import 'game_ping_view.dart';
-import 'game_profiles_view.dart';
+import 'game_optimizer_view.dart';
+import 'game_ping_tester_view.dart';
 import 'logs_view.dart';
 import 'mini_overlay_view.dart';
 import 'server_list_view.dart';
@@ -71,8 +71,8 @@ class _MainLayoutState extends State<MainLayout> {
 
     final List<Widget> pages = [
       DashboardView(onToggleMiniMode: _toggleMiniMode),
-      const GamePingView(),
-      const GameProfilesView(),
+      const GameOptimizerView(),
+      const GamePingTesterView(),
       const ServerListView(),
       const SplitTunnelView(),
       const SettingsView(),
@@ -191,8 +191,8 @@ class _MainLayoutState extends State<MainLayout> {
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       children: [
                         _buildNavItem(0, LocalizationService.tr('dashboard'), Icons.speed_rounded),
-                        _buildNavItem(1, LocalizationService.tr('game_optimizer'), Icons.network_check_rounded),
-                        _buildNavItem(2, LocalizationService.tr('game_profiles'), Icons.flash_on_rounded),
+                        _buildNavItem(1, LocalizationService.tr('game_optimizer'), Icons.sports_esports_rounded),
+                        _buildNavItem(2, LocalizationService.tr('game_ping_tester'), Icons.network_check_rounded),
                         _buildNavItem(3, LocalizationService.tr('servers'), Icons.dns_rounded),
                         _buildNavItem(4, LocalizationService.tr('split_tunneling'), Icons.alt_route_rounded),
                         _buildNavItem(5, LocalizationService.tr('settings'), Icons.tune_rounded),
@@ -253,9 +253,11 @@ class _MainLayoutState extends State<MainLayout> {
                               Text(
                                 vpnProvider.settings.antiSanctionMode
                                     ? 'Anti-Sanction DNS'
-                                    : (vpnProvider.settings.vpnMode == VpnMode.tun
-                                        ? 'Gaming (TUN)'
-                                        : 'System Proxy'),
+                                    : (vpnProvider.boostedGameIds.isNotEmpty && vpnProvider.settings.splitTunnelMode == SplitTunnelMode.inclusive
+                                        ? 'Per-App (${vpnProvider.boostedGameIds.length} Games)'
+                                        : (vpnProvider.settings.vpnMode == VpnMode.tun
+                                            ? 'Gaming (TUN)'
+                                            : 'System Proxy')),
                                 style: const TextStyle(
                                   color: Color(0xFF5A6678),
                                   fontSize: 9,

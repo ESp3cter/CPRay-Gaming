@@ -5,6 +5,7 @@ class GameTarget {
   final String host;
   final int port;
   final String icon;
+  final String category;
   int? ping;
   bool isTesting;
 
@@ -15,6 +16,7 @@ class GameTarget {
     required this.host,
     required this.port,
     required this.icon,
+    this.category = 'Tactical Shooter',
     this.ping,
     this.isTesting = false,
   });

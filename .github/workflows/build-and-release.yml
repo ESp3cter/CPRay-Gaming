@@ -26,10 +26,11 @@ jobs:
       - name: Install Inno Setup
         run: choco install innosetup -y
 
-      - name: Enable Windows Desktop Support
+      - name: Enable Windows Desktop Support & Set Administrator Privileges
         run: |
           flutter config --enable-windows-desktop
           flutter create --project-name=cpray_gaming --platforms=windows --org=com.cpray.gaming .
+          (Get-Content "windows\runner\runner.exe.manifest") -replace 'level="asInvoker"', 'level="requireAdministrator"' | Set-Content "windows\runner\runner.exe.manifest"
 
       - name: Fetch Dependencies
         run: flutter pub get

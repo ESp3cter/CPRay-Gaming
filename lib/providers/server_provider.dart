@@ -161,7 +161,21 @@ class ServerProvider extends ChangeNotifier {
 
   Future<void> testAllGameTargets() async {
     for (final target in _gameTargets) {
-      testGameTargetPing(target);
+      target.isTesting = true;
+    }
+    notifyListeners();
+
+    const chunkSize = 10;
+    for (var i = 0; i < _gameTargets.length; i += chunkSize) {
+      final end = (i + chunkSize < _gameTargets.length) ? i + chunkSize : _gameTargets.length;
+      final chunk = _gameTargets.sublist(i, end);
+
+      await Future.wait(chunk.map((target) async {
+        final ping = await GamePingService.testTargetPing(target);
+        target.ping = ping;
+        target.isTesting = false;
+      }));
+      notifyListeners();
     }
   }
 

@@ -159,6 +159,9 @@ class VpnService {
 
       _process!.stderr.transform(utf8.decoder).transform(const LineSplitter()).listen((line) {
         _addLog('[ERROR] $line');
+        if (line.contains('Access is denied') || line.contains('configure tun interface')) {
+          _addLog('⚠️ [PERMISSION NOTICE] Wintun TUN mode requires Administrator Privileges. Please ensure CPRay Gaming is running as Administrator, or switch to Proxy Mode in Settings.');
+        }
       });
 
       _process!.exitCode.then((code) {

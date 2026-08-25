@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../models/server_config.dart';
 import '../providers/server_provider.dart';
 import '../providers/vpn_provider.dart';
+import '../services/localization_service.dart';
 import '../widgets/server_tile.dart';
 
 class ServerListView extends StatefulWidget {
@@ -15,15 +16,6 @@ class ServerListView extends StatefulWidget {
 class _ServerListViewState extends State<ServerListView> {
   final TextEditingController _subUrlController = TextEditingController();
   final TextEditingController _manualConfigController = TextEditingController();
-
-  @override
-  void initState() {
-    super.initState();
-    final serverProvider = context.read<ServerProvider>();
-    if (serverProvider.subscriptionUrl != null) {
-      _subUrlController.text = serverProvider.subscriptionUrl!;
-    }
-  }
 
   @override
   void dispose() {
@@ -183,6 +175,15 @@ class _ServerListViewState extends State<ServerListView> {
     final vpnProvider = context.watch<VpnProvider>();
     final servers = serverProvider.filteredServers;
 
+    ServerConfig? bestGamingServer;
+    if (serverProvider.servers.isNotEmpty) {
+      final withPing = serverProvider.servers.where((s) => s.ping != null && s.ping! > 0).toList();
+      if (withPing.isNotEmpty) {
+        withPing.sort((a, b) => b.gamingScore.compareTo(a.gamingScore));
+        bestGamingServer = withPing.first;
+      }
+    }
+
     return Container(
       color: const Color(0xFF090B10),
       padding: const EdgeInsets.all(28),
@@ -209,12 +210,37 @@ class _ServerListViewState extends State<ServerListView> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${serverProvider.servers.length} nodes loaded • Select a node to connect',
+                    '${serverProvider.servers.length} nodes loaded • Smart Gaming Intelligence Analyzer',
                     style: const TextStyle(color: Color(0xFF6B7A94), fontSize: 12),
                   ),
                 ],
               ),
               const Spacer(),
+              // Auto-Pick Best Gaming Node Button
+              if (bestGamingServer != null)
+                ElevatedButton.icon(
+                  onPressed: () {
+                    vpnProvider.setSelectedServer(bestGamingServer);
+                    if (vpnProvider.isConnected) {
+                      vpnProvider.connect();
+                    }
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('👑 Selected Best Gaming Node: ${bestGamingServer!.name}')),
+                    );
+                    if (Navigator.canPop(context)) {
+                      Navigator.of(context).pop();
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF00FF88),
+                    foregroundColor: const Color(0xFF090B10),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  icon: const Icon(Icons.auto_awesome_rounded, size: 18),
+                  label: const Text('Auto-Pick Best Node', style: TextStyle(fontWeight: FontWeight.w800)),
+                ),
+              const SizedBox(width: 10),
               // Ping Test All Button
               ElevatedButton.icon(
                 onPressed: () => serverProvider.testAllPings(),
@@ -368,10 +394,12 @@ class _ServerListViewState extends State<ServerListView> {
                     itemBuilder: (context, index) {
                       final server = servers[index];
                       final isSelected = vpnProvider.selectedServer?.id == server.id;
+                      final isBest = bestGamingServer?.id == server.id;
 
                       return ServerTile(
                         server: server,
                         isSelected: isSelected,
+                        isBestGamingNode: isBest,
                         onSelect: () {
                           vpnProvider.setSelectedServer(server);
                           if (vpnProvider.isConnected) {

@@ -2,9 +2,9 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
 import '../models/app_settings.dart';
-import '../models/game_profile.dart';
 import '../models/server_config.dart';
 import '../services/audio_feedback_service.dart';
+import '../services/game_detector_service.dart';
 import '../services/localization_service.dart';
 import '../services/storage_service.dart';
 import '../services/vpn_service.dart';
@@ -25,9 +25,6 @@ class VpnProvider extends ChangeNotifier {
   double _currentJitter = 2.4;
   double _packetLoss = 0.0;
 
-  // Auto-failover counter
-  int _consecutiveFailures = 0;
-
   StreamSubscription<VpnStatus>? _statusSub;
   StreamSubscription<int>? _timerSub;
   StreamSubscription<String>? _logSub;
@@ -45,6 +42,9 @@ class VpnProvider extends ChangeNotifier {
 
   bool get isConnected => _status == VpnStatus.connected;
   bool get isConnecting => _status == VpnStatus.connecting;
+
+  List<String> get boostedGameIds => _settings.boostedGameIds;
+  List<String> get customGameExes => _settings.customGameExes;
 
   VpnProvider() {
     _init();
@@ -121,16 +121,68 @@ class VpnProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> applyGameProfile(GameProfile profile) async {
+  // --- Per-App Game Optimizer Booster Logic (Max 5 Games) ---
+  bool isGameBoosted(String gameId) {
+    return _settings.boostedGameIds.contains(gameId);
+  }
+
+  Future<bool> toggleGameBoost(DetectableGame game) async {
+    final currentList = List<String>.from(_settings.boostedGameIds);
+    if (currentList.contains(game.id)) {
+      currentList.remove(game.id);
+      AudioFeedbackService.playSwitchSound();
+    } else {
+      if (currentList.length >= 5) {
+        return false; // Reached max limit of 5 apps
+      }
+      currentList.add(game.id);
+      AudioFeedbackService.playConnectSound();
+    }
+
+    _settings = _settings.copyWith(boostedGameIds: currentList);
+    await _applyBoostedProcessesToSplitTunnel();
+    return true;
+  }
+
+  Future<void> addCustomGame(String exeName) async {
+    final clean = exeName.trim();
+    if (clean.isEmpty) return;
+    final list = List<String>.from(_settings.customGameExes);
+    if (!list.contains(clean)) {
+      list.add(clean);
+      _settings = _settings.copyWith(customGameExes: list);
+      await StorageService.saveSettings(_settings);
+      notifyListeners();
+    }
+  }
+
+  Future<void> removeCustomGame(String exeName) async {
+    final list = List<String>.from(_settings.customGameExes);
+    list.remove(exeName);
+    final boosted = List<String>.from(_settings.boostedGameIds)..remove(exeName);
+    _settings = _settings.copyWith(customGameExes: list, boostedGameIds: boosted);
+    await _applyBoostedProcessesToSplitTunnel();
+  }
+
+  Future<void> _applyBoostedProcessesToSplitTunnel() async {
+    final Set<String> targetProcesses = {};
+    for (final game in GameDetectorService.defaultGames) {
+      if (_settings.boostedGameIds.contains(game.id)) {
+        targetProcesses.addAll(game.processNames);
+      }
+    }
+    for (final custom in _settings.customGameExes) {
+      if (_settings.boostedGameIds.contains(custom)) {
+        targetProcesses.add(custom);
+      }
+    }
+
     _settings = _settings.copyWith(
-      activeGameProfileId: profile.id,
-      selectedDns: profile.optimalDns,
-      antiSanctionMode: profile.antiSanctionEnabled,
-      splitTunnelMode: SplitTunnelMode.inclusive,
-      splitTunnelApps: profile.processNames,
+      splitTunnelMode: targetProcesses.isNotEmpty ? SplitTunnelMode.inclusive : SplitTunnelMode.disabled,
+      splitTunnelApps: targetProcesses.toList(),
     );
+
     await StorageService.saveSettings(_settings);
-    AudioFeedbackService.playSwitchSound();
     notifyListeners();
 
     if (isConnected && _selectedServer != null) {

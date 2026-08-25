@@ -25,13 +25,15 @@ class AppSettings {
   final String? subscriptionUrl;
   final String? lastSelectedServerId;
 
-  // v0.1.0 New Settings
   final String language; // 'en' or 'fa'
   final bool soundEffectsEnabled;
   final bool autoFailoverEnabled;
   final bool antiSanctionMode;
   final String antiSanctionProvider; // 'radar', 'electro', 'shecan', 'dns4s'
-  final String? activeGameProfileId;
+
+  // Per-App Game Optimizer Boosted IDs (max 5)
+  final List<String> boostedGameIds;
+  final List<String> customGameExes;
 
   // Compatibility getter
   bool get isGamingTunMode => vpnMode == VpnMode.tun;
@@ -55,7 +57,8 @@ class AppSettings {
     this.autoFailoverEnabled = true,
     this.antiSanctionMode = false,
     this.antiSanctionProvider = 'radar',
-    this.activeGameProfileId,
+    this.boostedGameIds = const ['steam', 'cs2'],
+    this.customGameExes = const [],
   });
 
   AppSettings copyWith({
@@ -77,7 +80,8 @@ class AppSettings {
     bool? autoFailoverEnabled,
     bool? antiSanctionMode,
     String? antiSanctionProvider,
-    String? activeGameProfileId,
+    List<String>? boostedGameIds,
+    List<String>? customGameExes,
   }) {
     return AppSettings(
       vpnMode: vpnMode ?? this.vpnMode,
@@ -98,7 +102,8 @@ class AppSettings {
       autoFailoverEnabled: autoFailoverEnabled ?? this.autoFailoverEnabled,
       antiSanctionMode: antiSanctionMode ?? this.antiSanctionMode,
       antiSanctionProvider: antiSanctionProvider ?? this.antiSanctionProvider,
-      activeGameProfileId: activeGameProfileId ?? this.activeGameProfileId,
+      boostedGameIds: boostedGameIds ?? this.boostedGameIds,
+      customGameExes: customGameExes ?? this.customGameExes,
     );
   }
 
@@ -122,7 +127,8 @@ class AppSettings {
       'autoFailoverEnabled': autoFailoverEnabled,
       'antiSanctionMode': antiSanctionMode,
       'antiSanctionProvider': antiSanctionProvider,
-      'activeGameProfileId': activeGameProfileId,
+      'boostedGameIds': boostedGameIds,
+      'customGameExes': customGameExes,
     };
   }
 
@@ -149,7 +155,9 @@ class AppSettings {
       autoFailoverEnabled: json['autoFailoverEnabled'] as bool? ?? true,
       antiSanctionMode: json['antiSanctionMode'] as bool? ?? false,
       antiSanctionProvider: json['antiSanctionProvider'] as String? ?? 'radar',
-      activeGameProfileId: json['activeGameProfileId'] as String?,
+      boostedGameIds: (json['boostedGameIds'] as List<dynamic>?)?.map((e) => e.toString()).toList() ??
+          ['steam', 'cs2'],
+      customGameExes: (json['customGameExes'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
     );
   }
 }
