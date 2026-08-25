@@ -1,3 +1,6 @@
+import 'dart:io';
+import 'package:path/path.dart' as p;
+
 class DetectableGame {
   final String id;
   final String name;
@@ -5,6 +8,7 @@ class DetectableGame {
   final String icon;
   final List<String> processNames;
   final String defaultExe;
+  final String? installedPath;
 
   const DetectableGame({
     required this.id,
@@ -13,11 +17,24 @@ class DetectableGame {
     required this.icon,
     required this.processNames,
     required this.defaultExe,
+    this.installedPath,
   });
+
+  DetectableGame copyWithPath(String path) {
+    return DetectableGame(
+      id: id,
+      name: name,
+      category: category,
+      icon: icon,
+      processNames: processNames,
+      defaultExe: defaultExe,
+      installedPath: path,
+    );
+  }
 }
 
 class GameDetectorService {
-  static final List<DetectableGame> defaultGames = [
+  static final List<DetectableGame> knownCatalog = [
     // --- Launchers & Platforms ---
     const DetectableGame(
       id: 'steam',
@@ -252,4 +269,194 @@ class GameDetectorService {
       defaultExe: 'Warframe.x64.exe',
     ),
   ];
+
+  /// Scans Windows filesystem and registry paths to ONLY return games actually installed on this PC
+  static Future<List<DetectableGame>> scanInstalledGames() async {
+    if (!Platform.isWindows) {
+      return [];
+    }
+
+    final List<DetectableGame> detected = [];
+    final List<String> driveRoots = ['C:', 'D:', 'E:', 'F:', 'G:'];
+    final localAppData = Platform.environment['LOCALAPPDATA'] ?? r'C:\Users\Default\AppData\Local';
+    final programFiles = Platform.environment['ProgramFiles'] ?? r'C:\Program Files';
+    final programFilesX86 = Platform.environment['ProgramFiles(x86)'] ?? r'C:\Program Files (x86)';
+
+    // 1. Scan Steam Libraries
+    final List<String> steamSearchDirs = [
+      p.join(programFilesX86, 'Steam'),
+      p.join(programFiles, 'Steam'),
+      r'C:\Steam',
+      r'D:\Steam',
+      r'E:\Steam',
+      r'D:\SteamLibrary',
+      r'E:\SteamLibrary',
+      r'F:\SteamLibrary',
+    ];
+
+    // Check Steam Client itself
+    for (final dir in steamSearchDirs) {
+      final exe = File(p.join(dir, 'steam.exe'));
+      if (exe.existsSync()) {
+        detected.add(knownCatalog.firstWhere((g) => g.id == 'steam').copyWithPath(exe.path));
+        break;
+      }
+    }
+
+    // Check Discord
+    final discordDir = Directory(p.join(localAppData, 'Discord'));
+    if (discordDir.existsSync()) {
+      try {
+        final entries = discordDir.listSync();
+        for (final entry in entries) {
+          if (entry is Directory && entry.path.contains('app-')) {
+            final exe = File(p.join(entry.path, 'Discord.exe'));
+            if (exe.existsSync()) {
+              detected.add(knownCatalog.firstWhere((g) => g.id == 'discord').copyWithPath(exe.path));
+              break;
+            }
+          }
+        }
+      } catch (_) {}
+    }
+
+    // Check Riot Games
+    for (final drive in driveRoots) {
+      final riotClient = File(p.join(drive, 'Riot Games', 'Riot Client', 'RiotClientServices.exe'));
+      if (riotClient.existsSync()) {
+        detected.add(knownCatalog.firstWhere((g) => g.id == 'riot_client').copyWithPath(riotClient.path));
+      }
+      final valorant = File(p.join(drive, 'Riot Games', 'VALORANT', 'live', 'VALORANT.exe'));
+      if (valorant.existsSync()) {
+        detected.add(knownCatalog.firstWhere((g) => g.id == 'valorant').copyWithPath(valorant.path));
+      }
+      final lol = File(p.join(drive, 'Riot Games', 'League of Legends', 'LeagueClient.exe'));
+      if (lol.existsSync()) {
+        detected.add(knownCatalog.firstWhere((g) => g.id == 'lol').copyWithPath(lol.path));
+      }
+    }
+
+    // Check Epic Games
+    final epicExe = File(p.join(programFilesX86, 'Epic Games', 'Launcher', 'Portal', 'Binaries', 'Win64', 'EpicGamesLauncher.exe'));
+    final epicExeAlt = File(p.join(programFiles, 'Epic Games', 'Launcher', 'Portal', 'Binaries', 'Win64', 'EpicGamesLauncher.exe'));
+    if (epicExe.existsSync()) {
+      detected.add(knownCatalog.firstWhere((g) => g.id == 'epic').copyWithPath(epicExe.path));
+    } else if (epicExeAlt.existsSync()) {
+      detected.add(knownCatalog.firstWhere((g) => g.id == 'epic').copyWithPath(epicExeAlt.path));
+    }
+
+    // Check EA App
+    final eaExe = File(p.join(programFiles, 'Electronic Arts', 'EA Desktop', 'EA Desktop', 'EADesktop.exe'));
+    if (eaExe.existsSync()) {
+      detected.add(knownCatalog.firstWhere((g) => g.id == 'ea_app').copyWithPath(eaExe.path));
+    }
+
+    // Check Battle.net
+    final bnetExe = File(p.join(programFilesX86, 'Battle.net', 'Battle.net.exe'));
+    if (bnetExe.existsSync()) {
+      detected.add(knownCatalog.firstWhere((g) => g.id == 'bnet').copyWithPath(bnetExe.path));
+    }
+
+    // Check Ubisoft
+    final ubiExe = File(p.join(programFilesX86, 'Ubisoft', 'Ubisoft Game Launcher', 'upc.exe'));
+    if (ubiExe.existsSync()) {
+      detected.add(knownCatalog.firstWhere((g) => g.id == 'ubisoft').copyWithPath(ubiExe.path));
+    }
+
+    // Check Common Steam Games across library folders
+    for (final base in steamSearchDirs) {
+      final common = Directory(p.join(base, 'steamapps', 'common'));
+      if (common.existsSync()) {
+        try {
+          final gameFolders = common.listSync();
+          for (final folder in gameFolders) {
+            if (folder is Directory) {
+              final folderName = p.basename(folder.path).toLowerCase();
+              
+              // CS2
+              if (folderName.contains('counter-strike') || folderName.contains('csgo')) {
+                final cs2Exe = File(p.join(folder.path, 'game', 'bin', 'win64', 'cs2.exe'));
+                if (cs2Exe.existsSync()) {
+                  detected.add(knownCatalog.firstWhere((g) => g.id == 'cs2').copyWithPath(cs2Exe.path));
+                }
+              }
+              // Dota 2
+              if (folderName.contains('dota 2')) {
+                final dotaExe = File(p.join(folder.path, 'game', 'bin', 'win64', 'dota2.exe'));
+                if (dotaExe.existsSync()) {
+                  detected.add(knownCatalog.firstWhere((g) => g.id == 'dota2').copyWithPath(dotaExe.path));
+                }
+              }
+              // Rust
+              if (folderName.contains('rust')) {
+                final rustExe = File(p.join(folder.path, 'RustClient.exe'));
+                if (rustExe.existsSync()) {
+                  detected.add(knownCatalog.firstWhere((g) => g.id == 'rust').copyWithPath(rustExe.path));
+                }
+              }
+              // Apex Legends
+              if (folderName.contains('apex')) {
+                final apexExe = File(p.join(folder.path, 'r5apex.exe'));
+                if (apexExe.existsSync()) {
+                  detected.add(knownCatalog.firstWhere((g) => g.id == 'apex').copyWithPath(apexExe.path));
+                }
+              }
+              // PUBG
+              if (folderName.contains('pubg')) {
+                final pubgExe = File(p.join(folder.path, 'TslGame', 'Binaries', 'Win64', 'TslGame.exe'));
+                if (pubgExe.existsSync()) {
+                  detected.add(knownCatalog.firstWhere((g) => g.id == 'pubg').copyWithPath(pubgExe.path));
+                }
+              }
+              // GTA V
+              if (folderName.contains('grand theft auto v') || folderName.contains('gta v')) {
+                final gtaExe = File(p.join(folder.path, 'GTA5.exe'));
+                if (gtaExe.existsSync()) {
+                  detected.add(knownCatalog.firstWhere((g) => g.id == 'gta5').copyWithPath(gtaExe.path));
+                }
+              }
+              // Rainbow Six
+              if (folderName.contains('rainbow six') || folderName.contains('rainbowsix')) {
+                final r6Exe = File(p.join(folder.path, 'RainbowSix.exe'));
+                if (r6Exe.existsSync()) {
+                  detected.add(knownCatalog.firstWhere((g) => g.id == 'r6').copyWithPath(r6Exe.path));
+                }
+              }
+            }
+          }
+        } catch (_) {}
+      }
+    }
+
+    // De-duplicate by ID
+    final Map<String, DetectableGame> unique = {};
+    for (final item in detected) {
+      unique[item.id] = item;
+    }
+
+    return unique.values.toList();
+  }
+
+  /// Opens native Windows file dialog to let user select any .exe game file
+  static Future<String?> pickGameExecutable() async {
+    if (!Platform.isWindows) return null;
+    try {
+      final script = r'''
+Add-Type -AssemblyName System.Windows.Forms
+$f = New-Object System.Windows.Forms.OpenFileDialog
+$f.Title = "Select Game or Application Executable (.exe)"
+$f.Filter = "Executables (*.exe)|*.exe|All Files (*.*)|*.*"
+$f.InitialDirectory = [System.Environment]::GetFolderPath("ProgramFiles")
+if ($f.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
+    Write-Output $f.FileName
+}
+''';
+      final result = await Process.run('powershell', ['-NoProfile', '-Command', script]);
+      final out = (result.stdout as String).trim();
+      if (out.isNotEmpty && out.endsWith('.exe')) {
+        return out;
+      }
+    } catch (_) {}
+    return null;
+  }
 }

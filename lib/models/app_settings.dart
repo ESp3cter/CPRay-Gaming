@@ -47,7 +47,7 @@ class AppSettings {
     this.selectedDns = "1.1.1.1",
     this.customDns = "1.1.1.1",
     this.splitTunnelMode = SplitTunnelMode.disabled,
-    this.splitTunnelApps = const ['steam.exe', 'discord.exe', 'cs2.exe', 'valorant.exe'],
+    this.splitTunnelApps = const [],
     this.socksPort = 20808,
     this.httpPort = 20809,
     this.subscriptionUrl,
@@ -57,7 +57,7 @@ class AppSettings {
     this.autoFailoverEnabled = true,
     this.antiSanctionMode = false,
     this.antiSanctionProvider = 'radar',
-    this.boostedGameIds = const ['steam', 'cs2'],
+    this.boostedGameIds = const [],
     this.customGameExes = const [],
   });
 
@@ -145,7 +145,7 @@ class AppSettings {
           ? SplitTunnelMode.values[json['splitTunnelMode'] as int]
           : SplitTunnelMode.disabled,
       splitTunnelApps: (json['splitTunnelApps'] as List<dynamic>?)?.map((e) => e.toString()).toList() ??
-          ['steam.exe', 'discord.exe', 'cs2.exe', 'valorant.exe'],
+          const [],
       socksPort: json['socksPort'] as int? ?? 20808,
       httpPort: json['httpPort'] as int? ?? 20809,
       subscriptionUrl: json['subscriptionUrl'] as String?,
@@ -156,7 +156,7 @@ class AppSettings {
       antiSanctionMode: json['antiSanctionMode'] as bool? ?? false,
       antiSanctionProvider: json['antiSanctionProvider'] as String? ?? 'radar',
       boostedGameIds: (json['boostedGameIds'] as List<dynamic>?)?.map((e) => e.toString()).toList() ??
-          ['steam', 'cs2'],
+          const [],
       customGameExes: (json['customGameExes'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
     );
   }
