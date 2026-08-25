@@ -34,6 +34,8 @@ class DetectableGame {
 }
 
 class GameDetectorService {
+  static List<DetectableGame> get defaultGames => knownCatalog;
+
   static final List<DetectableGame> knownCatalog = [
     // --- Launchers & Platforms ---
     const DetectableGame(
