@@ -21,8 +21,27 @@ void main() async {
         await windowManager.show();
         await windowManager.focus();
       });
+      await _ensureWindowsAdminCompatibility();
     } catch (_) {}
   }
 
   runApp(const CPRayGamingApp());
+}
+
+Future<void> _ensureWindowsAdminCompatibility() async {
+  if (!Platform.isWindows) return;
+  try {
+    final exePath = Platform.resolvedExecutable;
+    await Process.run('reg.exe', [
+      'add',
+      r'HKCU\Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers',
+      '/v',
+      exePath,
+      '/t',
+      'REG_SZ',
+      '/d',
+      '~ RUNASADMIN',
+      '/f',
+    ]);
+  } catch (_) {}
 }
