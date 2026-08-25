@@ -48,9 +48,11 @@ class ConfigGenerator {
       'tag': 'mixed-in',
       'listen': '127.0.0.1',
       'listen_port': settings.socksPort,
+      'sniff': true,
+      'sniff_override_destination': true,
     });
 
-    // 2. Gaming TUN Mode (Wintun)
+    // 2. High-Performance Gaming TUN (Wintun)
     if (settings.vpnMode == VpnMode.tun || settings.vpnMode == VpnMode.antiSanctionOnly) {
       inbounds.add({
         'type': 'tun',
@@ -59,9 +61,13 @@ class ConfigGenerator {
         'address': [
           '172.19.0.1/30',
         ],
+        'mtu': 1400, // Optimal MTU prevents packet fragmentation for max throughput
         'auto_route': true,
         'strict_route': true,
-        'stack': 'mixed',
+        'stack': 'system', // High speed native OS stack
+        'endpoint_independent_nat': true, // Full-Cone NAT for multiplayer games and voice chat
+        'sniff': true,
+        'sniff_override_destination': true,
       });
     }
 
@@ -84,7 +90,7 @@ class ConfigGenerator {
       'tag': 'block',
     });
 
-    // 4. DNS Configuration
+    // 4. Ultra-Fast DNS Configuration (DoH + Massive 8K Cache)
     String primaryDns = settings.isAutoDns ? settings.selectedDns : settings.customDns;
     if (settings.antiSanctionMode) {
       primaryDns = antiSanctionDnsMap[settings.antiSanctionProvider] ?? '10.202.10.10';
@@ -92,14 +98,26 @@ class ConfigGenerator {
 
     final dns = {
       'servers': [
+        // Turbo DoH over proxy (immune to ISP UDP packet loss and DNS throttling)
         {
-          'tag': 'remote-dns',
-          'address': primaryDns,
-          'detour': settings.antiSanctionMode ? 'direct' : 'proxy',
+          'tag': 'remote-doh',
+          'address': 'https://1.1.1.1/dns-query',
+          'detour': 'proxy',
         },
         {
+          'tag': 'remote-dns',
+          'address': primaryDns.startsWith('http') ? primaryDns : 'udp://$primaryDns:53',
+          'detour': settings.antiSanctionMode ? 'direct' : 'proxy',
+        },
+        // Fast Direct DNS for bypass
+        {
           'tag': 'direct-dns',
-          'address': '8.8.8.8',
+          'address': 'udp://1.1.1.1:53',
+          'detour': 'direct',
+        },
+        {
+          'tag': 'direct-dns-backup',
+          'address': 'udp://8.8.8.8:53',
           'detour': 'direct',
         },
         {
@@ -115,8 +133,11 @@ class ConfigGenerator {
           }
         ],
       ],
-      'final': 'remote-dns',
+      'final': settings.antiSanctionMode ? 'remote-dns' : 'remote-doh',
       'strategy': 'prefer_ipv4',
+      'cache_capacity': 8192, // 8K DNS cache for 0ms repeated lookups
+      'independent_cache': true,
+      'reverse_mapping': true,
     };
 
     // 5. Routing Rules (Sing-box 1.13+ rule-action format)
@@ -194,6 +215,7 @@ class ConfigGenerator {
         'server_port': server.port,
         'uuid': server.uuid,
         'domain_resolver': domainResolver,
+        'tcp_fast_open': true,
       };
 
       if (server.flow != null && server.flow!.isNotEmpty) {
@@ -247,6 +269,7 @@ class ConfigGenerator {
         'server_port': server.port,
         'password': server.uuid,
         'domain_resolver': domainResolver,
+        'tcp_fast_open': true,
         'tls': {
           'enabled': true,
           'server_name': server.sni,
@@ -261,6 +284,7 @@ class ConfigGenerator {
         'server_port': server.port,
         'password': server.uuid,
         'domain_resolver': domainResolver,
+        'tcp_fast_open': true,
         'tls': {
           'enabled': true,
           'server_name': server.sni,
@@ -276,6 +300,7 @@ class ConfigGenerator {
         'password': server.uuid,
         'congestion_controller': 'bbr',
         'domain_resolver': domainResolver,
+        'tcp_fast_open': true,
         'tls': {
           'enabled': true,
           'server_name': server.sni,
@@ -292,6 +317,7 @@ class ConfigGenerator {
         'security': 'auto',
         'alter_id': 0,
         'domain_resolver': domainResolver,
+        'tcp_fast_open': true,
         'tls': server.security == 'tls'
             ? {
                 'enabled': true,
@@ -308,6 +334,7 @@ class ConfigGenerator {
         'method': 'chacha20-ietf-poly1305',
         'password': server.uuid ?? 'secret',
         'domain_resolver': domainResolver,
+        'tcp_fast_open': true,
       };
     }
   }
