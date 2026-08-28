@@ -109,7 +109,7 @@ jobs:
       - name: Generate Android Project
         run: |
           flutter config --enable-android
-          flutter create --platforms=android --org=com.cpray.gaming .
+          flutter create --project-name=cpray_gaming --platforms=android --org=com.cpray.gaming .
           flutter pub get
 
       - name: Build Android Release APK
