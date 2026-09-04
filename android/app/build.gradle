@@ -14,18 +14,18 @@ if (localPropertiesFile.exists()) {
 
 def flutterVersionCode = localProperties.getProperty('flutter.versionCode')
 if (flutterVersionCode == null) {
-    flutterVersionCode = '26'
+    flutterVersionCode = '27'
 }
 
 def flutterVersionName = localProperties.getProperty('flutter.versionName')
 if (flutterVersionName == null) {
-    flutterVersionName = '0.2.6'
+    flutterVersionName = '0.2.7'
 }
 
 android {
     namespace "com.cpray.gaming"
     compileSdk 34
-    ndkVersion flutter.ndkVersion
+    ndkVersion = "25.1.8937393"
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17

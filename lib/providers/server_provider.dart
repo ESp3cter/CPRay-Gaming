@@ -102,7 +102,7 @@ class ServerProvider extends ChangeNotifier {
     if (clean.isEmpty) return false;
 
     // Try parsing as multi-line or subscription batch first
-    final configs = SubscriptionService.parseSubscription(clean);
+    final configs = SubscriptionService.parseContent(clean);
     if (configs.isNotEmpty) {
       for (final cfg in configs.reversed) {
         _servers.insert(0, cfg);

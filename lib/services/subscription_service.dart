@@ -41,6 +41,8 @@ class SubscriptionService {
     return utf8.decode(base64.decode(str));
   }
 
+  static List<ServerConfig> parseSubscription(String content) => parseContent(content);
+
   static List<ServerConfig> parseContent(String content) {
     String decoded = content.trim();
 
