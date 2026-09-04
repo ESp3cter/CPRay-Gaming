@@ -30,6 +30,7 @@ jobs:
           flutter config --enable-windows-desktop
           flutter create --project-name=cpray_gaming --platforms=windows --org=com.cpray.gaming .
           (Get-Content "windows\runner\runner.exe.manifest") -replace 'level="asInvoker"', 'level="requireAdministrator"' | Set-Content "windows\runner\runner.exe.manifest"
+          Copy-Item "assets\app_icon.ico" -Destination "windows\runner\resources\app_icon.ico" -Force
 
       - name: Fetch Dependencies
         run: flutter pub get
