@@ -66,6 +66,7 @@ class ConfigGenerator {
         'strict_route': true,
         'stack': 'system', // High speed native OS stack
         'endpoint_independent_nat': true, // Full-Cone NAT for multiplayer games and voice chat
+        'udp_timeout': '5m', // Keep matchmaking UDP sessions and game lobbies open
         'sniff': true,
         'sniff_override_destination': true,
       });
@@ -88,6 +89,12 @@ class ConfigGenerator {
     outbounds.add({
       'type': 'block',
       'tag': 'block',
+    });
+
+    // DNS Outbound
+    outbounds.add({
+      'type': 'dns',
+      'tag': 'dns-out',
     });
 
     // 4. Ultra-Fast DNS Configuration (DoH + Massive 8K Cache)
@@ -185,6 +192,13 @@ class ConfigGenerator {
         'level': 'info',
         'timestamp': true,
       },
+      'experimental': {
+        'clash_api': {
+          'external_controller': '127.0.0.1:9090',
+          'secret': '',
+          'default_mode': 'rule',
+        },
+      },
       'dns': dns,
       'inbounds': inbounds,
       'outbounds': outbounds,
@@ -193,6 +207,7 @@ class ConfigGenerator {
           'server': 'direct-dns',
           'strategy': 'prefer_ipv4',
         },
+        'find_process': true, // CRITICAL FIX: Enables Windows process name matching for Split Tunneling & Game Optimizer
         'rules': routeRules,
         'final': finalOutbound,
         'auto_detect_interface': true,
@@ -216,99 +231,52 @@ class ConfigGenerator {
         'uuid': server.uuid,
         'domain_resolver': domainResolver,
         'tcp_fast_open': true,
+        'packet_encoding': 'xudp', // High-performance UDP gaming with 0 packet loss
       };
 
-      if (server.flow != null && server.flow!.isNotEmpty) {
+      // Flow (xtls-rprx-vision) is ONLY valid on direct/tcp transport
+      final isTcp = server.network == null || server.network!.isEmpty || server.network == 'tcp';
+      if (isTcp && server.flow != null && server.flow!.isNotEmpty) {
         map['flow'] = server.flow;
       }
 
+      // TLS / Reality
       if (server.security == 'reality') {
         map['tls'] = {
           'enabled': true,
-          'server_name': server.sni,
+          'server_name': (server.sni != null && server.sni!.isNotEmpty) ? server.sni : (server.host ?? server.server),
           'reality': {
             'enabled': true,
-            'public_key': server.pbk,
+            'public_key': server.pbk ?? '',
             'short_id': server.sid ?? '',
           },
           'utls': {
             'enabled': true,
-            'fingerprint': server.fingerprint ?? 'chrome',
-          }
+            'fingerprint': (server.fingerprint != null && server.fingerprint!.isNotEmpty) ? server.fingerprint! : 'chrome',
+          },
+          if (server.alpn != null && server.alpn!.isNotEmpty)
+            'alpn': server.alpn!.split(','),
         };
       } else if (server.security == 'tls') {
         map['tls'] = {
           'enabled': true,
-          'server_name': server.sni,
+          'server_name': (server.sni != null && server.sni!.isNotEmpty) ? server.sni : (server.host ?? server.server),
+          'insecure': server.insecure ?? false,
           'utls': {
             'enabled': true,
-            'fingerprint': server.fingerprint ?? 'chrome',
-          }
+            'fingerprint': (server.fingerprint != null && server.fingerprint!.isNotEmpty) ? server.fingerprint! : 'chrome',
+          },
+          if (server.alpn != null && server.alpn!.isNotEmpty)
+            'alpn': server.alpn!.split(','),
         };
       }
 
-      if (server.network == 'ws') {
-        map['transport'] = {
-          'type': 'ws',
-          'path': server.path ?? '/',
-          'headers': server.host != null ? {'Host': server.host!} : null,
-        };
-      } else if (server.network == 'grpc') {
-        map['transport'] = {
-          'type': 'grpc',
-          'service_name': server.path ?? '',
-        };
-      }
+      // Transports (WS / gRPC / HTTPUpgrade)
+      _applyTransport(map, server);
 
       return map;
-    } else if (protocol == 'hysteria2' || protocol == 'hy2') {
-      return {
-        'type': 'hysteria2',
-        'tag': 'proxy',
-        'server': server.server,
-        'server_port': server.port,
-        'password': server.uuid,
-        'domain_resolver': domainResolver,
-        'tcp_fast_open': true,
-        'tls': {
-          'enabled': true,
-          'server_name': server.sni,
-          'alpn': [server.alpn ?? 'h3'],
-        }
-      };
-    } else if (protocol == 'trojan') {
-      return {
-        'type': 'trojan',
-        'tag': 'proxy',
-        'server': server.server,
-        'server_port': server.port,
-        'password': server.uuid,
-        'domain_resolver': domainResolver,
-        'tcp_fast_open': true,
-        'tls': {
-          'enabled': true,
-          'server_name': server.sni,
-        }
-      };
-    } else if (protocol == 'tuic') {
-      return {
-        'type': 'tuic',
-        'tag': 'proxy',
-        'server': server.server,
-        'server_port': server.port,
-        'uuid': server.uuid,
-        'password': server.uuid,
-        'congestion_controller': 'bbr',
-        'domain_resolver': domainResolver,
-        'tcp_fast_open': true,
-        'tls': {
-          'enabled': true,
-          'server_name': server.sni,
-          'alpn': [server.alpn ?? 'h3'],
-        }
-      };
     } else if (protocol == 'vmess') {
-      return {
+      final map = <String, dynamic>{
         'type': 'vmess',
         'tag': 'proxy',
         'server': server.server,
@@ -318,23 +286,161 @@ class ConfigGenerator {
         'alter_id': 0,
         'domain_resolver': domainResolver,
         'tcp_fast_open': true,
-        'tls': server.security == 'tls'
-            ? {
-                'enabled': true,
-                'server_name': server.sni,
-              }
-            : null,
+        'packet_encoding': 'xudp', // High-performance UDP gaming
+      };
+
+      if (server.security == 'tls') {
+        map['tls'] = {
+          'enabled': true,
+          'server_name': (server.sni != null && server.sni!.isNotEmpty) ? server.sni : (server.host ?? server.server),
+          'insecure': server.insecure ?? false,
+          'utls': {
+            'enabled': true,
+            'fingerprint': (server.fingerprint != null && server.fingerprint!.isNotEmpty) ? server.fingerprint! : 'chrome',
+          },
+          if (server.alpn != null && server.alpn!.isNotEmpty)
+            'alpn': server.alpn!.split(','),
+        };
+      }
+
+      // Transports (Fixes VMess WebSocket / gRPC / HTTPUpgrade)
+      _applyTransport(map, server);
+
+      return map;
+    } else if (protocol == 'trojan') {
+      final map = <String, dynamic>{
+        'type': 'trojan',
+        'tag': 'proxy',
+        'server': server.server,
+        'server_port': server.port,
+        'password': server.uuid,
+        'domain_resolver': domainResolver,
+        'tcp_fast_open': true,
+        'packet_encoding': 'xudp',
+        'tls': {
+          'enabled': true,
+          'server_name': (server.sni != null && server.sni!.isNotEmpty) ? server.sni : (server.host ?? server.server),
+          'insecure': server.insecure ?? false,
+          'utls': {
+            'enabled': true,
+            'fingerprint': (server.fingerprint != null && server.fingerprint!.isNotEmpty) ? server.fingerprint! : 'chrome',
+          },
+          if (server.alpn != null && server.alpn!.isNotEmpty)
+            'alpn': server.alpn!.split(','),
+        },
+      };
+
+      _applyTransport(map, server);
+
+      return map;
+    } else if (protocol == 'hysteria2' || protocol == 'hy2') {
+      final map = <String, dynamic>{
+        'type': 'hysteria2',
+        'tag': 'proxy',
+        'server': server.server,
+        'server_port': server.port,
+        'password': server.uuid,
+        'domain_resolver': domainResolver,
+        'tcp_fast_open': true,
+        'tls': {
+          'enabled': true,
+          'server_name': (server.sni != null && server.sni!.isNotEmpty) ? server.sni : server.server,
+          'insecure': server.insecure ?? false,
+          'alpn': [server.alpn ?? 'h3'],
+        },
+      };
+
+      if (server.obfs != null && server.obfs!.isNotEmpty) {
+        map['obfs'] = {
+          'type': server.obfs,
+          'password': server.obfsPassword ?? '',
+        };
+      }
+
+      if (server.upMbps != null && server.upMbps! > 0) {
+        map['up_mbps'] = server.upMbps;
+      }
+      if (server.downMbps != null && server.downMbps! > 0) {
+        map['down_mbps'] = server.downMbps;
+      }
+
+      return map;
+    } else if (protocol == 'tuic') {
+      return {
+        'type': 'tuic',
+        'tag': 'proxy',
+        'server': server.server,
+        'server_port': server.port,
+        'uuid': server.uuid,
+        'password': server.uuid,
+        'congestion_controller': 'bbr',
+        'udp_relay_mode': 'native',
+        'zero_rtt_handshake': true,
+        'domain_resolver': domainResolver,
+        'tcp_fast_open': true,
+        'tls': {
+          'enabled': true,
+          'server_name': (server.sni != null && server.sni!.isNotEmpty) ? server.sni : server.server,
+          'insecure': server.insecure ?? false,
+          'alpn': [server.alpn ?? 'h3'],
+        },
+      };
+    } else if (protocol == 'wireguard') {
+      return {
+        'type': 'wireguard',
+        'tag': 'proxy',
+        'server': server.server,
+        'server_port': server.port,
+        'system_interface': false,
+        'interface_name': 'cpray-wg',
+        'local_address': [server.localAddress ?? '10.0.0.2/32'],
+        'private_key': server.privateKey ?? '',
+        'peer_public_key': server.peerPublicKey ?? '',
+        if (server.presharedKey != null && server.presharedKey!.isNotEmpty)
+          'pre_shared_key': server.presharedKey,
+        'mtu': 1400,
+        'domain_resolver': domainResolver,
       };
     } else {
+      // Shadowsocks
+      final method = server.method != null && server.method!.isNotEmpty
+          ? server.method!
+          : 'chacha20-ietf-poly1305';
       return {
         'type': 'shadowsocks',
         'tag': 'proxy',
         'server': server.server,
         'server_port': server.port,
-        'method': 'chacha20-ietf-poly1305',
+        'method': method,
         'password': server.uuid ?? 'secret',
         'domain_resolver': domainResolver,
         'tcp_fast_open': true,
+        'packet_encoding': 'xudp',
+        'udp_over_tcp': true, // Fallback if direct UDP packets are throttled
+      };
+    }
+  }
+
+  static void _applyTransport(Map<String, dynamic> map, ServerConfig server) {
+    final net = (server.network ?? '').toLowerCase();
+    if (net == 'ws') {
+      map['transport'] = {
+        'type': 'ws',
+        'path': (server.path != null && server.path!.isNotEmpty) ? server.path! : '/',
+        if (server.host != null && server.host!.isNotEmpty)
+          'headers': {'Host': server.host!},
+      };
+    } else if (net == 'grpc') {
+      map['transport'] = {
+        'type': 'grpc',
+        'service_name': server.path ?? '',
+      };
+    } else if (net == 'httpupgrade') {
+      map['transport'] = {
+        'type': 'httpupgrade',
+        if (server.host != null && server.host!.isNotEmpty)
+          'host': server.host,
+        'path': (server.path != null && server.path!.isNotEmpty) ? server.path! : '/',
       };
     }
   }

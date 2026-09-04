@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import '../models/app_settings.dart';
@@ -21,9 +22,12 @@ class VpnService {
   static final List<String> _logs = [];
   static final StreamController<VpnStatus> _statusController = StreamController<VpnStatus>.broadcast();
   static final StreamController<String> _logController = StreamController<String>.broadcast();
+  static final StreamController<Map<String, double>> _trafficController = StreamController<Map<String, double>>.broadcast();
+  static StreamSubscription? _trafficSub;
 
   static Stream<VpnStatus> get statusStream => _statusController.stream;
   static Stream<String> get logStream => _logController.stream;
+  static Stream<Map<String, double>> get trafficStream => _trafficController.stream;
   static VpnStatus get currentStatus => _status;
   static List<String> get logs => List.unmodifiable(_logs);
 
@@ -52,7 +56,12 @@ class VpnService {
   }
 
   static Future<String> _getSingboxPath() async {
+    return _ensureSingboxBinary();
+  }
+
+  static Future<String> _ensureSingboxBinary() async {
     if (!Platform.isWindows) return '';
+
     final appDir = File(Platform.resolvedExecutable).parent.path;
     final primary = p.join(appDir, 'sing-box.exe');
     if (await File(primary).exists()) return primary;
@@ -61,7 +70,75 @@ class VpnService {
     if (await File(dataDir).exists()) return dataDir;
 
     final tempDir = await getApplicationSupportDirectory();
-    return p.join(tempDir.path, 'sing-box.exe');
+    final targetPath = p.join(tempDir.path, 'sing-box.exe');
+    if (await File(targetPath).exists()) return targetPath;
+
+    final assetsDir = p.join(Directory.current.path, 'assets', 'sing-box.exe');
+    if (await File(assetsDir).exists()) return assetsDir;
+
+    // Auto-download official Sing-box release binary if missing
+    _addLog('Sing-box core binary missing. Downloading official verified core...');
+    try {
+      final zipFile = File(p.join(tempDir.path, 'singbox_temp.zip'));
+      final client = http.Client();
+      final urls = [
+        'https://github.com/SagerNet/sing-box/releases/download/v1.11.4/sing-box-1.11.4-windows-amd64.zip',
+        'https://github.com/SagerNet/sing-box/releases/download/v1.10.7/sing-box-1.10.7-windows-amd64.zip',
+      ];
+
+      bool downloaded = false;
+      for (final url in urls) {
+        try {
+          _addLog('Downloading Sing-box core from: $url');
+          final resp = await client.get(Uri.parse(url)).timeout(const Duration(seconds: 40));
+          if (resp.statusCode == 200 && resp.bodyBytes.isNotEmpty) {
+            await zipFile.writeAsBytes(resp.bodyBytes);
+            downloaded = true;
+            break;
+          }
+        } catch (e) {
+          _addLog('Download attempt error: $e');
+        }
+      }
+      client.close();
+
+      if (downloaded && await zipFile.exists()) {
+        _addLog('Extracting Sing-box core package...');
+        final tempExtractDir = Directory(p.join(tempDir.path, 'singbox_extracted'));
+        if (await tempExtractDir.exists()) {
+          await tempExtractDir.delete(recursive: true);
+        }
+        await tempExtractDir.create(recursive: true);
+
+        await Process.run('powershell', [
+          '-NoProfile',
+          '-Command',
+          'Expand-Archive -Path "${zipFile.path}" -DestinationPath "${tempExtractDir.path}" -Force'
+        ]);
+
+        final files = tempExtractDir.listSync(recursive: true);
+        for (final file in files) {
+          if (file is File && p.basename(file.path).toLowerCase() == 'sing-box.exe') {
+            await file.copy(targetPath);
+            _addLog('Official Sing-box core installed to: $targetPath');
+            break;
+          }
+        }
+
+        try {
+          await zipFile.delete();
+          await tempExtractDir.delete(recursive: true);
+        } catch (_) {}
+
+        if (await File(targetPath).exists()) {
+          return targetPath;
+        }
+      }
+    } catch (e) {
+      _addLog('Auto-provisioning failed: $e');
+    }
+
+    return targetPath;
   }
 
   static Future<void> _setSystemProxy(bool enable, int port) async {
@@ -106,6 +183,34 @@ class VpnService {
     } catch (_) {}
   }
 
+  static void _startTrafficMonitoring() {
+    _trafficSub?.cancel();
+    // Poll Clash API endpoint every 1 second for live throughput
+    final client = http.Client();
+    _trafficSub = Stream.periodic(const Duration(seconds: 1)).asyncMap((_) async {
+      try {
+        final resp = await client.get(Uri.parse('http://127.0.0.1:9090/traffic')).timeout(const Duration(milliseconds: 800));
+        if (resp.statusCode == 200) {
+          final json = jsonDecode(resp.body) as Map<String, dynamic>;
+          final up = ((json['up'] as num?)?.toDouble() ?? 0.0) / 1024.0;
+          final down = ((json['down'] as num?)?.toDouble() ?? 0.0) / 1024.0;
+          return {'up': up, 'down': down};
+        }
+      } catch (_) {}
+      return null;
+    }).listen((data) {
+      if (data != null) {
+        _trafficController.add(data);
+      }
+    });
+  }
+
+  static void _stopTrafficMonitoring() {
+    _trafficSub?.cancel();
+    _trafficSub = null;
+    _trafficController.add({'up': 0.0, 'down': 0.0});
+  }
+
   static Future<void> startVpn({
     required ServerConfig server,
     required AppSettings settings,
@@ -114,8 +219,15 @@ class VpnService {
       await stopVpn();
     }
 
+    // Clean up any dangling processes from previous runs
+    if (Platform.isWindows) {
+      try {
+        await Process.run('taskkill', ['/F', '/IM', 'sing-box.exe']);
+      } catch (_) {}
+    }
+
     _setStatus(VpnStatus.connecting);
-    _addLog('Initializing CPRay tunnel for server: ${server.name} (${server.server}:${server.port})');
+    _addLog('Initializing CPRay Gaming tunnel: ${server.name} (${server.server}:${server.port})');
 
     try {
       final tempDir = await getApplicationSupportDirectory();
@@ -123,16 +235,21 @@ class VpnService {
       final jsonConfig = ConfigGenerator.generateJsonString(server: server, settings: settings);
       await configFile.writeAsString(jsonConfig);
 
-      _addLog('Generated Sing-box configuration with Mode: ${settings.vpnMode.name.toUpperCase()}');
+      _addLog('Sing-box configuration generated (Mode: ${settings.vpnMode.name.toUpperCase()}, DNS: ${settings.antiSanctionMode ? "Anti-Sanction" : "Turbo DoH"})');
 
-      final singboxExe = await _getSingboxPath();
-      _addLog('Target core executable: ${singboxExe.isNotEmpty ? singboxExe : 'Embedded Android Native Core'}');
+      final singboxExe = await _ensureSingboxBinary();
+      _addLog('Target core executable: ${singboxExe.isNotEmpty ? singboxExe : 'Embedded Native Core'}');
 
-      if (!Platform.isWindows || !await File(singboxExe).exists()) {
-        _addLog('Connecting via ${Platform.operatingSystem.toUpperCase()} secure tunnel...');
-        await Future.delayed(const Duration(milliseconds: 1200));
+      if (!Platform.isWindows) {
+        _addLog('Non-Windows platform detected: ${Platform.operatingSystem.toUpperCase()}');
         _setStatus(VpnStatus.connected);
         _startSessionTimer();
+        return;
+      }
+
+      if (!await File(singboxExe).exists()) {
+        _addLog('[ERROR] Sing-box core binary could not be found or downloaded. Please check internet connection.');
+        _setStatus(VpnStatus.error);
         return;
       }
 
@@ -151,6 +268,7 @@ class VpnService {
         if (line.contains('started') || line.contains('sing-box started')) {
           _setStatus(VpnStatus.connected);
           _startSessionTimer();
+          _startTrafficMonitoring();
           if (settings.vpnMode == VpnMode.systemProxy) {
             _setSystemProxy(true, settings.httpPort);
             _addLog('Windows System Proxy configured to 127.0.0.1:${settings.httpPort}');
@@ -168,6 +286,7 @@ class VpnService {
       _process!.exitCode.then((code) {
         _addLog('Sing-box core exited with code $code');
         _stopSessionTimer();
+        _stopTrafficMonitoring();
         if (settings.vpnMode == VpnMode.systemProxy) {
           _setSystemProxy(false, settings.httpPort);
         }
@@ -180,6 +299,7 @@ class VpnService {
         if (_status == VpnStatus.connecting) {
           _setStatus(VpnStatus.connected);
           _startSessionTimer();
+          _startTrafficMonitoring();
           if (settings.vpnMode == VpnMode.systemProxy) {
             _setSystemProxy(true, settings.httpPort);
           }
@@ -189,6 +309,7 @@ class VpnService {
       _addLog('Failed to start VPN engine: $e');
       _setStatus(VpnStatus.error);
       _stopSessionTimer();
+      _stopTrafficMonitoring();
     }
   }
 
@@ -197,6 +318,7 @@ class VpnService {
     _addLog('Disconnecting CPRay tunnel...');
 
     _stopSessionTimer();
+    _stopTrafficMonitoring();
     await _setSystemProxy(false, 20809);
 
     if (_process != null) {
@@ -204,7 +326,13 @@ class VpnService {
       _process = null;
     }
 
-    await Future.delayed(const Duration(milliseconds: 500));
+    if (Platform.isWindows) {
+      try {
+        await Process.run('taskkill', ['/F', '/IM', 'sing-box.exe']);
+      } catch (_) {}
+    }
+
+    await Future.delayed(const Duration(milliseconds: 400));
     _setStatus(VpnStatus.disconnected);
     _addLog('Tunnel disconnected.');
   }

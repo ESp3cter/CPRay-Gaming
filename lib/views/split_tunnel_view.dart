@@ -1,7 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/app_settings.dart';
 import '../providers/vpn_provider.dart';
+import '../services/game_detector_service.dart';
 
 class SplitTunnelView extends StatefulWidget {
   const SplitTunnelView({super.key});
@@ -31,23 +33,54 @@ class _SplitTunnelViewState extends State<SplitTunnelView> {
   }
 
   void _addApp(String appName) {
-    final clean = appName.trim().toLowerCase();
+    final clean = appName.trim();
     if (clean.isEmpty) return;
-    final finalName = clean.endsWith('.exe') ? clean : '$clean.exe';
 
+    final companionList = GameDetectorService.getCompanionProcesses(clean);
     final vpnProvider = context.read<VpnProvider>();
     final list = List<String>.from(vpnProvider.settings.splitTunnelApps);
-    if (!list.contains(finalName)) {
-      list.add(finalName);
+
+    int addedCount = 0;
+    for (final proc in companionList) {
+      final finalName = proc.toLowerCase().endsWith('.exe') ? proc.toLowerCase() : '${proc.toLowerCase()}.exe';
+      if (!list.contains(finalName)) {
+        list.add(finalName);
+        addedCount++;
+      }
+    }
+
+    if (addedCount > 0) {
       vpnProvider.setSplitTunneling(vpnProvider.settings.splitTunnelMode, list);
+      if (companionList.length > 1 && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Added $clean and its companion processes (${companionList.join(", ")})'),
+            duration: const Duration(seconds: 2),
+            backgroundColor: const Color(0xFF141726),
+          ),
+        );
+      }
     }
     _appController.clear();
   }
 
+  Future<void> _browseAndAddApp() async {
+    final exePath = await GameDetectorService.pickGameExecutable();
+    if (exePath != null && mounted) {
+      final fileName = exePath.split(Platform.isWindows ? r'\' : '/').last;
+      _addApp(fileName);
+    }
+  }
+
   void _removeApp(String appName) {
     final vpnProvider = context.read<VpnProvider>();
-    final list = List<String>.from(vpnProvider.settings.splitTunnelApps)..remove(appName);
+    final list = List<String>.from(vpnProvider.settings.splitTunnelApps)..remove(appName.toLowerCase());
     vpnProvider.setSplitTunneling(vpnProvider.settings.splitTunnelMode, list);
+  }
+
+  void _clearAll() {
+    final vpnProvider = context.read<VpnProvider>();
+    vpnProvider.setSplitTunneling(vpnProvider.settings.splitTunnelMode, []);
   }
 
   @override
@@ -167,17 +200,29 @@ class _SplitTunnelViewState extends State<SplitTunnelView> {
                 ),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 10),
             ElevatedButton.icon(
               onPressed: () => _addApp(_appController.text),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF00D4FF),
                 foregroundColor: const Color(0xFF090B10),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               ),
               icon: const Icon(Icons.add_rounded, size: 18),
               label: const Text('Add App', style: TextStyle(fontWeight: FontWeight.w800)),
+            ),
+            const SizedBox(width: 8),
+            OutlinedButton.icon(
+              onPressed: _browseAndAddApp,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFF00D4FF),
+                side: const BorderSide(color: Color(0xFF00D4FF)),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              ),
+              icon: const Icon(Icons.folder_open_rounded, size: 18),
+              label: const Text('Browse .exe', style: TextStyle(fontWeight: FontWeight.w700)),
             ),
           ],
         ),
@@ -228,6 +273,35 @@ class _SplitTunnelViewState extends State<SplitTunnelView> {
 
         const SizedBox(height: 20),
 
+        // Header with count and Clear All
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'ROUTED APPLICATIONS (${appList.length})',
+              style: const TextStyle(
+                color: Color(0xFF8C9BAE),
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.8,
+              ),
+            ),
+            if (appList.isNotEmpty)
+              InkWell(
+                onTap: _clearAll,
+                borderRadius: BorderRadius.circular(6),
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  child: Text(
+                    'Clear All',
+                    style: TextStyle(color: Color(0xFFFF3366), fontSize: 11, fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 10),
+
         // Configured Apps List
         Expanded(
           child: Container(
@@ -240,7 +314,7 @@ class _SplitTunnelViewState extends State<SplitTunnelView> {
             child: appList.isEmpty
                 ? const Center(
                     child: Text(
-                      'No apps added yet. Type an executable name or click a preset above.',
+                      'No apps added yet. Type an executable name, click a preset, or browse .exe file above.',
                       style: TextStyle(color: Color(0xFF5A6678), fontSize: 13),
                     ),
                   )

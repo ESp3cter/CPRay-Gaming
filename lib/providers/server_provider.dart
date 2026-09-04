@@ -98,7 +98,24 @@ class ServerProvider extends ChangeNotifier {
   }
 
   Future<bool> addManualConfig(String configLink) async {
-    final parsed = SubscriptionService.parseSingleConfig(configLink);
+    final clean = configLink.trim();
+    if (clean.isEmpty) return false;
+
+    // Try parsing as multi-line or subscription batch first
+    final configs = SubscriptionService.parseSubscription(clean);
+    if (configs.isNotEmpty) {
+      for (final cfg in configs.reversed) {
+        _servers.insert(0, cfg);
+      }
+      await StorageService.saveServers(_servers);
+      for (final cfg in configs) {
+        testSinglePing(cfg);
+      }
+      notifyListeners();
+      return true;
+    }
+
+    final parsed = SubscriptionService.parseSingleConfig(clean);
     if (parsed != null) {
       _servers.insert(0, parsed);
       await StorageService.saveServers(_servers);

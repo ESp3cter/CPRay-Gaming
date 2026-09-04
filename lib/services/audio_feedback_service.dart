@@ -1,49 +1,33 @@
-import 'dart:io';
+import 'package:flutter/services.dart';
 
 class AudioFeedbackService {
   static bool isEnabled = true;
 
   static void playConnectSound() {
-    if (!isEnabled || !Platform.isWindows) return;
+    if (!isEnabled) return;
     try {
-      Process.run('powershell', [
-        '-NoProfile',
-        '-Command',
-        '[console]::beep(523,100); [console]::beep(659,100); [console]::beep(784,150); [console]::beep(1046,250)'
-      ]);
+      SystemSound.play(SystemSoundType.alert);
     } catch (_) {}
   }
 
   static void playDisconnectSound() {
-    if (!isEnabled || !Platform.isWindows) return;
+    if (!isEnabled) return;
     try {
-      Process.run('powershell', [
-        '-NoProfile',
-        '-Command',
-        '[console]::beep(784,120); [console]::beep(523,200)'
-      ]);
+      SystemSound.play(SystemSoundType.click);
     } catch (_) {}
   }
 
   static void playSwitchSound() {
-    if (!isEnabled || !Platform.isWindows) return;
+    if (!isEnabled) return;
     try {
-      Process.run('powershell', [
-        '-NoProfile',
-        '-Command',
-        '[console]::beep(880,80); [console]::beep(1174,120)'
-      ]);
+      SystemSound.play(SystemSoundType.click);
     } catch (_) {}
   }
 
   static void playPingSound() {
-    if (!isEnabled || !Platform.isWindows) return;
+    if (!isEnabled) return;
     try {
-      Process.run('powershell', [
-        '-NoProfile',
-        '-Command',
-        '[console]::beep(1318,60)'
-      ]);
+      SystemSound.play(SystemSoundType.click);
     } catch (_) {}
   }
 }

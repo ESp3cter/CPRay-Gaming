@@ -17,6 +17,12 @@ class ServerConfig {
   final String? alpn;
   final String? fingerprint;
   final String? rawUri;
+  final String? method; // Shadowsocks cipher method (e.g. aes-256-gcm)
+  final bool? insecure; // Allow insecure / skip cert verification
+  final String? obfs; // Hysteria 2 obfs type (e.g. salamander)
+  final String? obfsPassword; // Hysteria 2 obfs password
+  final int? upMbps; // Upload bandwidth limit
+  final int? downMbps; // Download bandwidth limit
   
   // Wireguard specific
   final String? privateKey;
@@ -47,6 +53,12 @@ class ServerConfig {
     this.alpn,
     this.fingerprint,
     this.rawUri,
+    this.method,
+    this.insecure,
+    this.obfs,
+    this.obfsPassword,
+    this.upMbps,
+    this.downMbps,
     this.privateKey,
     this.localAddress,
     this.peerPublicKey,
@@ -140,6 +152,12 @@ class ServerConfig {
     String? alpn,
     String? fingerprint,
     String? rawUri,
+    String? method,
+    bool? insecure,
+    String? obfs,
+    String? obfsPassword,
+    int? upMbps,
+    int? downMbps,
     String? privateKey,
     String? localAddress,
     String? peerPublicKey,
@@ -166,6 +184,12 @@ class ServerConfig {
       alpn: alpn ?? this.alpn,
       fingerprint: fingerprint ?? this.fingerprint,
       rawUri: rawUri ?? this.rawUri,
+      method: method ?? this.method,
+      insecure: insecure ?? this.insecure,
+      obfs: obfs ?? this.obfs,
+      obfsPassword: obfsPassword ?? this.obfsPassword,
+      upMbps: upMbps ?? this.upMbps,
+      downMbps: downMbps ?? this.downMbps,
       privateKey: privateKey ?? this.privateKey,
       localAddress: localAddress ?? this.localAddress,
       peerPublicKey: peerPublicKey ?? this.peerPublicKey,
@@ -195,6 +219,12 @@ class ServerConfig {
       'alpn': alpn,
       'fingerprint': fingerprint,
       'rawUri': rawUri,
+      'method': method,
+      'insecure': insecure,
+      'obfs': obfs,
+      'obfsPassword': obfsPassword,
+      'upMbps': upMbps,
+      'downMbps': downMbps,
       'privateKey': privateKey,
       'localAddress': localAddress,
       'peerPublicKey': peerPublicKey,
@@ -223,6 +253,12 @@ class ServerConfig {
       alpn: json['alpn'] as String?,
       fingerprint: json['fingerprint'] as String?,
       rawUri: json['rawUri'] as String?,
+      method: json['method'] as String?,
+      insecure: json['insecure'] as bool?,
+      obfs: json['obfs'] as String?,
+      obfsPassword: json['obfsPassword'] as String?,
+      upMbps: json['upMbps'] as int?,
+      downMbps: json['downMbps'] as int?,
       privateKey: json['privateKey'] as String?,
       localAddress: json['localAddress'] as String?,
       peerPublicKey: json['peerPublicKey'] as String?,

@@ -453,7 +453,14 @@ if ($f.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
     Write-Output $f.FileName
 }
 ''';
-      final result = await Process.run('powershell', ['-NoProfile', '-Command', script]);
+      final result = await Process.run('powershell', [
+        '-STA',
+        '-NoProfile',
+        '-ExecutionPolicy',
+        'Bypass',
+        '-Command',
+        script
+      ]);
       final out = (result.stdout as String).trim();
       if (out.isNotEmpty && out.endsWith('.exe')) {
         return out;
@@ -461,4 +468,43 @@ if ($f.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
     } catch (_) {}
     return null;
   }
+
+  /// Returns companion/child processes related to a given executable
+  /// e.g. 'valorant.exe' -> ['valorant.exe', 'VALORANT-Win64-Shipping.exe', 'vgc.exe', 'RiotClientServices.exe']
+  static List<String> getCompanionProcesses(String exe) {
+    final lower = exe.trim().toLowerCase();
+    final base = p.basename(lower);
+
+    // Find any matching game in knownCatalog
+    for (final game in knownCatalog) {
+      final matches = game.processNames.any((pn) => pn.toLowerCase() == base) ||
+          game.defaultExe.toLowerCase() == base ||
+          base.contains(game.id);
+      if (matches) {
+        return game.processNames;
+      }
+    }
+
+    // Common heuristics
+    if (base.contains('valorant')) {
+      return ['valorant.exe', 'VALORANT-Win64-Shipping.exe', 'vgc.exe', 'RiotClientServices.exe'];
+    }
+    if (base.contains('cs2') || base.contains('csgo')) {
+      return ['cs2.exe', 'csgo.exe'];
+    }
+    if (base.contains('steam')) {
+      return ['steam.exe', 'steamwebhelper.exe'];
+    }
+    if (base.contains('discord')) {
+      return ['Discord.exe', 'Update.exe'];
+    }
+    if (base.contains('epic')) {
+      return ['EpicGamesLauncher.exe', 'EpicWebHelper.exe'];
+    }
+    if (base.contains('league') || base.contains('riot')) {
+      return ['League of Legends.exe', 'LeagueClient.exe', 'RiotClientServices.exe'];
+    }
+    return [base];
+  }
 }
+
