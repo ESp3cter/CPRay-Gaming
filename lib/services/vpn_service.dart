@@ -48,11 +48,26 @@ class VpnService {
     _logs.add(formatted);
     if (_logs.length > 500) _logs.removeAt(0);
     _logController.add(formatted);
+    _appendDiskLog(formatted);
+  }
+
+  static Future<void> _appendDiskLog(String formatted) async {
+    try {
+      final tempDir = await getApplicationSupportDirectory();
+      final logFile = File(p.join(tempDir.path, 'cpray_log.txt'));
+      await logFile.writeAsString('$formatted\r\n', mode: FileMode.append, flush: true);
+    } catch (_) {}
   }
 
   static void clearLogs() {
     _logs.clear();
     _logController.add('[LOGS CLEARED]');
+    try {
+      getApplicationSupportDirectory().then((tempDir) {
+        final logFile = File(p.join(tempDir.path, 'cpray_log.txt'));
+        if (logFile.existsSync()) logFile.deleteSync();
+      });
+    } catch (_) {}
   }
 
   static Future<String> _getSingboxPath() async {

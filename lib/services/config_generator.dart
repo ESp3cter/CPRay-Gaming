@@ -48,8 +48,6 @@ class ConfigGenerator {
       'tag': 'mixed-in',
       'listen': '127.0.0.1',
       'listen_port': settings.socksPort,
-      'sniff': true,
-      'sniff_override_destination': true,
     });
 
     // 2. High-Performance Gaming TUN (Wintun)
@@ -67,8 +65,6 @@ class ConfigGenerator {
         'stack': 'system', // High speed native OS stack
         'endpoint_independent_nat': true, // Full-Cone NAT for multiplayer games and voice chat
         'udp_timeout': '5m', // Keep matchmaking UDP sessions and game lobbies open
-        'sniff': true,
-        'sniff_override_destination': true,
       });
     }
 
@@ -91,13 +87,7 @@ class ConfigGenerator {
       'tag': 'block',
     });
 
-    // DNS Outbound
-    outbounds.add({
-      'type': 'dns',
-      'tag': 'dns-out',
-    });
-
-    // 4. Ultra-Fast DNS Configuration (DoH + Massive 8K Cache)
+    // 4. Ultra-Fast DNS Configuration (Sing-box 1.14+ Typed DNS + 8K Cache)
     String primaryDns = settings.isAutoDns ? settings.selectedDns : settings.customDns;
     if (settings.antiSanctionMode) {
       primaryDns = antiSanctionDnsMap[settings.antiSanctionProvider] ?? '10.202.10.10';
@@ -105,32 +95,28 @@ class ConfigGenerator {
 
     final dns = {
       'servers': [
-        // Turbo DoH over proxy (immune to ISP UDP packet loss and DNS throttling)
-        {
-          'tag': 'remote-doh',
-          'address': 'https://1.1.1.1/dns-query',
-          'detour': 'proxy',
-        },
-        {
-          'tag': 'remote-dns',
-          'address': primaryDns.startsWith('http') ? primaryDns : 'udp://$primaryDns:53',
-          'detour': settings.antiSanctionMode ? 'direct' : 'proxy',
-        },
-        // Fast Direct DNS for bypass
-        {
-          'tag': 'direct-dns',
-          'address': 'udp://1.1.1.1:53',
-          'detour': 'direct',
-        },
-        {
-          'tag': 'direct-dns-backup',
-          'address': 'udp://8.8.8.8:53',
-          'detour': 'direct',
-        },
-        {
-          'tag': 'local-dns',
-          'address': 'local',
-        }
+        _buildDnsServer(
+          tag: 'remote-doh',
+          rawAddress: 'https://1.1.1.1/dns-query',
+          detour: 'proxy',
+        ),
+        _buildDnsServer(
+          tag: 'remote-dns',
+          rawAddress: primaryDns,
+          detour: settings.antiSanctionMode ? 'direct' : 'proxy',
+        ),
+        _buildDnsServer(
+          tag: 'direct-dns',
+          rawAddress: '1.1.1.1:53',
+        ),
+        _buildDnsServer(
+          tag: 'direct-dns-backup',
+          rawAddress: '8.8.8.8:53',
+        ),
+        _buildDnsServer(
+          tag: 'local-dns',
+          rawAddress: 'local',
+        ),
       ],
       'rules': [
         if (settings.bypassIranianTraffic) ...[
@@ -143,7 +129,6 @@ class ConfigGenerator {
       'final': settings.antiSanctionMode ? 'remote-dns' : 'remote-doh',
       'strategy': 'prefer_ipv4',
       'cache_capacity': 8192, // 8K DNS cache for 0ms repeated lookups
-      'independent_cache': true,
       'reverse_mapping': true,
     };
 
@@ -443,6 +428,64 @@ class ConfigGenerator {
         'path': (server.path != null && server.path!.isNotEmpty) ? server.path! : '/',
       };
     }
+  }
+
+  static Map<String, dynamic> _buildDnsServer({
+    required String tag,
+    required String rawAddress,
+    String? detour,
+  }) {
+    final clean = rawAddress.trim();
+    if (clean == 'local') {
+      return {
+        'tag': tag,
+        'type': 'local',
+        if (detour != null) 'detour': detour,
+      };
+    }
+
+    if (clean.startsWith('https://') || clean.startsWith('http://')) {
+      final uri = Uri.parse(clean);
+      return {
+        'tag': tag,
+        'type': 'https',
+        'server': uri.host,
+        'server_port': uri.port > 0 ? uri.port : 443,
+        'path': uri.path.isNotEmpty ? uri.path : '/dns-query',
+        if (detour != null) 'detour': detour,
+      };
+    }
+
+    if (clean.startsWith('tls://')) {
+      final uri = Uri.parse(clean);
+      return {
+        'tag': tag,
+        'type': 'tls',
+        'server': uri.host,
+        'server_port': uri.port > 0 ? uri.port : 853,
+        if (detour != null) 'detour': detour,
+      };
+    }
+
+    // Default UDP / Plain DNS
+    String host = clean;
+    int port = 53;
+    if (host.startsWith('udp://')) {
+      host = host.substring('udp://'.length);
+    }
+    if (host.contains(':')) {
+      final parts = host.split(':');
+      host = parts[0];
+      port = int.tryParse(parts[1]) ?? 53;
+    }
+
+    return {
+      'tag': tag,
+      'type': 'udp',
+      'server': host,
+      'server_port': port,
+      if (detour != null) 'detour': detour,
+    };
   }
 
   static String generateJsonString({
