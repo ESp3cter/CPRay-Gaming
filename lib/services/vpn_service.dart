@@ -278,25 +278,44 @@ class VpnService {
         mode: ProcessStartMode.normal,
       );
 
-      _process!.stdout.transform(utf8.decoder).transform(const LineSplitter()).listen((line) {
-        _addLog(line);
-        if (line.contains('started') || line.contains('sing-box started')) {
-          _setStatus(VpnStatus.connected);
-          _startSessionTimer();
-          _startTrafficMonitoring();
-          if (settings.vpnMode == VpnMode.systemProxy) {
-            _setSystemProxy(true, settings.httpPort);
-            _addLog('Windows System Proxy configured to 127.0.0.1:${settings.httpPort}');
+      void handleProcessLine(String rawLine) {
+        // Strip all ANSI escape sequences so log output is clean and human-readable
+        final cleanLine = rawLine.replaceAll(RegExp(r'[\u001b\x1B]\[[0-?]*[ -/]*[@-~]'), '').trim();
+        if (cleanLine.isEmpty) return;
+
+        // Classify actual log severity: do NOT mark normal INFO logs as [ERROR]
+        final upper = cleanLine.toUpperCase();
+        if (upper.contains('FATAL') || upper.contains('ERROR') || upper.contains('PANIC')) {
+          _addLog('[ERROR] $cleanLine');
+        } else if (upper.contains('WARN')) {
+          _addLog('[WARN] $cleanLine');
+        } else {
+          _addLog(cleanLine);
+        }
+
+        // Instant connection detection from either stream (Sing-box logs to stderr on Go)
+        if (cleanLine.contains('sing-box started') ||
+            cleanLine.contains('started at CPRay-Wintun') ||
+            cleanLine.contains('inbound/tun[tun-in]: started') ||
+            cleanLine.contains('inbound/mixed[mixed-in]: tcp server started')) {
+          if (_status == VpnStatus.connecting) {
+            _setStatus(VpnStatus.connected);
+            _startSessionTimer();
+            _startTrafficMonitoring();
+            if (settings.vpnMode == VpnMode.systemProxy) {
+              _setSystemProxy(true, settings.httpPort);
+              _addLog('Windows System Proxy configured to 127.0.0.1:${settings.httpPort}');
+            }
           }
         }
-      });
 
-      _process!.stderr.transform(utf8.decoder).transform(const LineSplitter()).listen((line) {
-        _addLog('[ERROR] $line');
-        if (line.contains('Access is denied') || line.contains('configure tun interface')) {
+        if (cleanLine.contains('Access is denied') || cleanLine.contains('configure tun interface')) {
           _addLog('⚠️ [PERMISSION NOTICE] Wintun TUN mode requires Administrator Privileges. Please ensure CPRay Gaming is running as Administrator, or switch to Proxy Mode in Settings.');
         }
-      });
+      }
+
+      _process!.stdout.transform(utf8.decoder).transform(const LineSplitter()).listen(handleProcessLine);
+      _process!.stderr.transform(utf8.decoder).transform(const LineSplitter()).listen(handleProcessLine);
 
       _process!.exitCode.then((code) {
         _addLog('Sing-box core exited with code $code');

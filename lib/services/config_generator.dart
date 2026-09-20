@@ -61,8 +61,8 @@ class ConfigGenerator {
         ],
         'mtu': 1400, // Optimal MTU prevents packet fragmentation for max throughput
         'auto_route': true,
-        'strict_route': true,
-        'stack': 'system', // High speed native OS stack
+        'strict_route': false,
+        'stack': 'mixed', // System stack for TCP throughput + gVisor for reliable UDP/DNS packet translation on Windows
         'endpoint_independent_nat': true, // Full-Cone NAT for multiplayer games and voice chat
         'udp_timeout': '5m', // Keep matchmaking UDP sessions and game lobbies open
       });
@@ -96,22 +96,22 @@ class ConfigGenerator {
     final dns = {
       'servers': [
         _buildDnsServer(
-          tag: 'remote-doh',
-          rawAddress: 'https://1.1.1.1/dns-query',
-          detour: 'proxy',
-        ),
-        _buildDnsServer(
           tag: 'remote-dns',
           rawAddress: primaryDns,
           detour: settings.antiSanctionMode ? 'direct' : 'proxy',
         ),
         _buildDnsServer(
+          tag: 'remote-doh',
+          rawAddress: 'https://1.1.1.1/dns-query',
+          detour: 'proxy',
+        ),
+        _buildDnsServer(
           tag: 'direct-dns',
-          rawAddress: '1.1.1.1:53',
+          rawAddress: 'local',
         ),
         _buildDnsServer(
           tag: 'direct-dns-backup',
-          rawAddress: '8.8.8.8:53',
+          rawAddress: '178.22.122.100:53', // Shecan clean domestic DNS
         ),
         _buildDnsServer(
           tag: 'local-dns',
@@ -126,7 +126,7 @@ class ConfigGenerator {
           }
         ],
       ],
-      'final': settings.antiSanctionMode ? 'remote-dns' : 'remote-doh',
+      'final': 'remote-dns',
       'strategy': 'prefer_ipv4',
       'cache_capacity': 8192, // 8K DNS cache for 0ms repeated lookups
       'reverse_mapping': true,
@@ -139,6 +139,10 @@ class ConfigGenerator {
       },
       {
         'protocol': 'dns',
+        'action': 'hijack-dns',
+      },
+      {
+        'port': [53],
         'action': 'hijack-dns',
       },
       {
@@ -446,12 +450,17 @@ class ConfigGenerator {
 
     if (clean.startsWith('https://') || clean.startsWith('http://')) {
       final uri = Uri.parse(clean);
+      final sni = uri.host == '1.1.1.1' ? 'cloudflare-dns.com' : (uri.host == '8.8.8.8' ? 'dns.google' : uri.host);
       return {
         'tag': tag,
         'type': 'https',
         'server': uri.host,
         'server_port': uri.port > 0 ? uri.port : 443,
         'path': uri.path.isNotEmpty ? uri.path : '/dns-query',
+        'tls': {
+          'enabled': true,
+          'server_name': sni,
+        },
         if (detour != null) 'detour': detour,
       };
     }
