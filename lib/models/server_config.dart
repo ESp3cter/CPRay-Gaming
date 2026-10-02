@@ -69,7 +69,7 @@ class ServerConfig {
 
   bool get isUdpCapable {
     final p = protocol.toLowerCase();
-    return p == 'hysteria2' || p == 'hy2' || p == 'tuic' || p == 'wireguard' || p == 'vless' || p == 'shadowsocks';
+    return p == 'hysteria2' || p == 'hy2' || p == 'tuic' || p == 'wireguard' || p == 'vless' || p == 'vmess' || p == 'shadowsocks';
   }
 
   int get gamingScore {
@@ -118,15 +118,18 @@ class ServerConfig {
   }
 
   String get gamingGrade {
+    if (ping != null && ping! <= 0) return 'F';
     final s = gamingScore;
     if (s >= 85) return 'S+';
     if (s >= 70) return 'A';
     if (s >= 50) return 'B';
+    if (s == 0) return 'F';
     return 'C';
   }
 
   String get gamingRecommendation {
     final g = gamingGrade;
+    if (g == 'F') return '❌ Unreachable / Offline';
     if (g == 'S+') return '👑 Best For Gaming (Ultra Low Jitter & UDP)';
     if (g == 'A') return '⚡ Competitive Gaming Grade';
     if (g == 'B') return '🎮 Playable Casual Gaming';

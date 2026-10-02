@@ -1,11 +1,11 @@
 import 'dart:async';
-import 'dart:math';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import '../models/app_settings.dart';
 import '../models/server_config.dart';
 import '../services/audio_feedback_service.dart';
-import '../services/game_detector_service.dart';
 import '../services/localization_service.dart';
+import '../services/ping_service.dart';
 import '../services/storage_service.dart';
 import '../services/vpn_service.dart';
 
@@ -21,8 +21,8 @@ class VpnProvider extends ChangeNotifier {
   Timer? _speedTimer;
 
   // Jitter & Stability Metrics
-  final List<double> _pingHistory = [65, 68, 64, 70, 66, 65, 67, 63, 69, 65];
-  double _currentJitter = 2.4;
+  final List<double> _pingHistory = [];
+  double _currentJitter = 0.0;
   double _packetLoss = 0.0;
 
   StreamSubscription<VpnStatus>? _statusSub;
@@ -303,36 +303,23 @@ class VpnProvider extends ChangeNotifier {
 
   void _startMetricsMonitoring() {
     _speedTimer?.cancel();
-    _speedTimer = Timer.periodic(const Duration(milliseconds: 1000), (timer) {
-      if (isConnected) {
-        // Base ping from selected server or realistic gaming baseline
-        final basePing = _selectedServer?.ping != null && _selectedServer!.ping! > 0
-            ? _selectedServer!.ping!.toDouble()
-            : 55.0;
-
-        // Micro-jitter variance (< 2ms on optimized xudp tunnel)
-        final jitterDelta = (Random().nextDouble() * 2.8) - 1.4;
-        final currentSample = (basePing + jitterDelta).clamp(15.0, 300.0);
-
-        _pingHistory.add(currentSample);
-        if (_pingHistory.length > 30) _pingHistory.removeAt(0);
-
-        // Real jitter calculation
-        if (_pingHistory.length >= 2) {
-          double totalDelta = 0;
-          for (int i = 1; i < _pingHistory.length; i++) {
-            totalDelta += (_pingHistory[i] - _pingHistory[i - 1]).abs();
-          }
-          _currentJitter = (totalDelta / (_pingHistory.length - 1)).clamp(0.2, 15.0);
+    _speedTimer = Timer.periodic(const Duration(seconds: 2), (timer) async {
+      if (isConnected && _selectedServer != null) {
+        // Protocol-aware real ping measurement
+        final ping = await PingService.testServerPingSmart(_selectedServer!);
+        if (ping > 0) {
+          recordPingSample(ping.toDouble());
+        } else {
+          // If ping probe fails, record packet loss
+          recordPingSample(-1);
         }
-        _packetLoss = 0.0; // 0 packet loss on optimized CPRay xudp gaming tunnel
       } else {
         _uploadSpeed = 0.0;
         _downloadSpeed = 0.0;
         _currentJitter = 0.0;
         _packetLoss = 0.0;
+        notifyListeners();
       }
-      notifyListeners();
     });
   }
 

@@ -172,7 +172,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
               ),
             ],
             const SizedBox(height: 22),
-            if (!_isDownloading)
+            if (!_isDownloading) ...[
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
@@ -187,11 +187,23 @@ class _UpdateDialogState extends State<UpdateDialog> {
                   ),
                   icon: const Icon(Icons.system_update_alt_rounded, size: 18),
                   label: const Text(
-                    'Install & Restart Now (Required)',
+                    'Install & Restart Now',
                     style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
                   ),
                 ),
               ),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text(
+                    'Remind Me Later',
+                    style: TextStyle(color: Color(0xFF7E8B9E), fontSize: 12),
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),

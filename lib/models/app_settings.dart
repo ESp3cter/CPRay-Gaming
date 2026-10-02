@@ -109,14 +109,14 @@ class AppSettings {
 
   Map<String, dynamic> toJson() {
     return {
-      'vpnMode': vpnMode.index,
+      'vpnMode': vpnMode.name,
       'autoStartOnBoot': autoStartOnBoot,
       'autoConnectOnLaunch': autoConnectOnLaunch,
       'bypassIranianTraffic': bypassIranianTraffic,
       'isAutoDns': isAutoDns,
       'selectedDns': selectedDns,
       'customDns': customDns,
-      'splitTunnelMode': splitTunnelMode.index,
+      'splitTunnelMode': splitTunnelMode.name,
       'splitTunnelApps': splitTunnelApps,
       'socksPort': socksPort,
       'httpPort': httpPort,
@@ -134,7 +134,11 @@ class AppSettings {
 
   factory AppSettings.fromJson(Map<String, dynamic> json) {
     return AppSettings(
-      vpnMode: json['vpnMode'] != null ? VpnMode.values[json['vpnMode'] as int] : VpnMode.tun,
+      vpnMode: json['vpnMode'] != null
+          ? (json['vpnMode'] is int
+              ? VpnMode.values[json['vpnMode'] as int]
+              : VpnMode.values.firstWhere((e) => e.name == json['vpnMode'], orElse: () => VpnMode.tun))
+          : VpnMode.tun,
       autoStartOnBoot: json['autoStartOnBoot'] as bool? ?? false,
       autoConnectOnLaunch: json['autoConnectOnLaunch'] as bool? ?? false,
       bypassIranianTraffic: json['bypassIranianTraffic'] as bool? ?? true,
@@ -142,7 +146,9 @@ class AppSettings {
       selectedDns: json['selectedDns'] as String? ?? "1.1.1.1",
       customDns: json['customDns'] as String? ?? "1.1.1.1",
       splitTunnelMode: json['splitTunnelMode'] != null
-          ? SplitTunnelMode.values[json['splitTunnelMode'] as int]
+          ? (json['splitTunnelMode'] is int
+              ? SplitTunnelMode.values[json['splitTunnelMode'] as int]
+              : SplitTunnelMode.values.firstWhere((e) => e.name == json['splitTunnelMode'], orElse: () => SplitTunnelMode.disabled))
           : SplitTunnelMode.disabled,
       splitTunnelApps: (json['splitTunnelApps'] as List<dynamic>?)?.map((e) => e.toString()).toList() ??
           const [],

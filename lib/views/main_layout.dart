@@ -90,14 +90,14 @@ class _MainLayoutState extends State<MainLayout> {
               width: 236,
               decoration: BoxDecoration(
                 color: const Color(0xFF0E111A),
-                border: const Border(
-                  right: BorderSide(color: Color(0xFF1B2133), width: 1.2),
+                border: BorderDirectional(
+                  end: const BorderSide(color: Color(0xFF1B2133), width: 1.2),
                 ),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.3),
                     blurRadius: 15,
-                    offset: const Offset(4, 0),
+                    offset: Offset(LocalizationService.isPersian ? -4 : 4, 0),
                   ),
                 ],
               ),

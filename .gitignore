@@ -34,3 +34,19 @@ migrate_working_dir/
 windows/flutter/ephemeral/
 windows/runner/Release/
 windows/runner/Debug/
+
+# Android specific
+android/local.properties
+android/.gradle/
+android/app/build/
+*.apk
+*.aab
+*.jks
+*.keystore
+key.properties
+
+# Downloaded binaries & archives
+assets/sing-box.exe
+singbox.zip
+singbox_temp/
+singbox_extracted/

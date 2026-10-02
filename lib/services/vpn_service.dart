@@ -198,10 +198,14 @@ class VpnService {
     } catch (_) {}
   }
 
+  static http.Client? _trafficClient;
+
   static void _startTrafficMonitoring() {
     _trafficSub?.cancel();
+    _trafficClient?.close();
     // Poll Clash API endpoint every 1 second for live throughput
     final client = http.Client();
+    _trafficClient = client;
     _trafficSub = Stream.periodic(const Duration(seconds: 1)).asyncMap((_) async {
       try {
         final resp = await client.get(Uri.parse('http://127.0.0.1:9090/traffic')).timeout(const Duration(milliseconds: 800));
@@ -223,6 +227,8 @@ class VpnService {
   static void _stopTrafficMonitoring() {
     _trafficSub?.cancel();
     _trafficSub = null;
+    _trafficClient?.close();
+    _trafficClient = null;
     _trafficController.add({'up': 0.0, 'down': 0.0});
   }
 
@@ -234,11 +240,12 @@ class VpnService {
       await stopVpn();
     }
 
-    // Clean up any dangling processes from previous runs
-    if (Platform.isWindows) {
+    // Clean up our own dangling process from previous runs (if any)
+    if (Platform.isWindows && _process != null) {
       try {
-        await Process.run('taskkill', ['/F', '/IM', 'sing-box.exe']);
+        _process!.kill(ProcessSignal.sigterm);
       } catch (_) {}
+      _process = null;
     }
 
     _setStatus(VpnStatus.connecting);
@@ -329,14 +336,12 @@ class VpnService {
         }
       });
 
-      Future.delayed(const Duration(seconds: 3), () {
+      // Connection timeout: if still connecting after 15 seconds, mark as error
+      Future.delayed(const Duration(seconds: 15), () {
         if (_status == VpnStatus.connecting) {
-          _setStatus(VpnStatus.connected);
-          _startSessionTimer();
-          _startTrafficMonitoring();
-          if (settings.vpnMode == VpnMode.systemProxy) {
-            _setSystemProxy(true, settings.httpPort);
-          }
+          _addLog('[ERROR] Connection timeout: Sing-box failed to establish tunnel within 15 seconds.');
+          _setStatus(VpnStatus.error);
+          stopVpn();
         }
       });
     } catch (e) {
@@ -360,11 +365,7 @@ class VpnService {
       _process = null;
     }
 
-    if (Platform.isWindows) {
-      try {
-        await Process.run('taskkill', ['/F', '/IM', 'sing-box.exe']);
-      } catch (_) {}
-    }
+    // Process already killed via sigterm above
 
     await Future.delayed(const Duration(milliseconds: 400));
     _setStatus(VpnStatus.disconnected);

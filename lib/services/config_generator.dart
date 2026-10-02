@@ -50,6 +50,16 @@ class ConfigGenerator {
       'listen_port': settings.socksPort,
     });
 
+    // Dedicated HTTP Proxy inbound for Windows System Proxy mode
+    if (settings.vpnMode == VpnMode.systemProxy) {
+      inbounds.add({
+        'type': 'http',
+        'tag': 'http-in',
+        'listen': '127.0.0.1',
+        'listen_port': settings.httpPort,
+      });
+    }
+
     // 2. High-Performance Gaming TUN (Wintun)
     if (settings.vpnMode == VpnMode.tun || settings.vpnMode == VpnMode.antiSanctionOnly) {
       inbounds.add({
@@ -57,7 +67,8 @@ class ConfigGenerator {
         'tag': 'tun-in',
         'interface_name': 'CPRay-Wintun',
         'address': [
-          '172.19.0.1/30',
+          '172.19.0.1/28',
+          'fdfe:dcba:9876::1/126',
         ],
         'mtu': 1400, // Optimal MTU prevents packet fragmentation for max throughput
         'auto_route': true,
@@ -193,7 +204,7 @@ class ConfigGenerator {
       'outbounds': outbounds,
       'route': {
         'default_domain_resolver': {
-          'server': 'direct-dns',
+          'server': 'direct-dns-backup',
           'strategy': 'prefer_ipv4',
         },
         'find_process': true, // CRITICAL FIX: Enables Windows process name matching for Split Tunneling & Game Optimizer
@@ -207,7 +218,7 @@ class ConfigGenerator {
   static Map<String, dynamic> _buildProxyOutbound(ServerConfig server) {
     final protocol = server.protocol.toLowerCase();
     final domainResolver = {
-      'server': 'direct-dns',
+      'server': 'direct-dns-backup',
       'strategy': 'prefer_ipv4',
     };
 
@@ -230,15 +241,28 @@ class ConfigGenerator {
       }
 
       // TLS / Reality
-      if (server.security == 'reality') {
+      if (server.security == 'reality' && server.pbk != null && server.pbk!.isNotEmpty) {
         map['tls'] = {
           'enabled': true,
           'server_name': (server.sni != null && server.sni!.isNotEmpty) ? server.sni : (server.host ?? server.server),
           'reality': {
             'enabled': true,
-            'public_key': server.pbk ?? '',
+            'public_key': (server.pbk != null && server.pbk!.isNotEmpty) ? server.pbk! : '',
             'short_id': server.sid ?? '',
           },
+          'utls': {
+            'enabled': true,
+            'fingerprint': (server.fingerprint != null && server.fingerprint!.isNotEmpty) ? server.fingerprint! : 'chrome',
+          },
+          if (server.alpn != null && server.alpn!.isNotEmpty)
+            'alpn': server.alpn!.split(','),
+        };
+      } else if (server.security == 'reality') {
+        // Reality without public key - fall back to basic TLS to prevent crash
+        map['tls'] = {
+          'enabled': true,
+          'server_name': (server.sni != null && server.sni!.isNotEmpty) ? server.sni : (server.host ?? server.server),
+          'insecure': true,
           'utls': {
             'enabled': true,
             'fingerprint': (server.fingerprint != null && server.fingerprint!.isNotEmpty) ? server.fingerprint! : 'chrome',
@@ -405,7 +429,7 @@ class ConfigGenerator {
         'domain_resolver': domainResolver,
         'tcp_fast_open': true,
         'packet_encoding': 'xudp',
-        'udp_over_tcp': true, // Fallback if direct UDP packets are throttled
+        // udp_over_tcp omitted: only compatible with shadowsocks-rust servers
       };
     }
   }

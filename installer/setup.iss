@@ -1,6 +1,6 @@
 ; Script generated for CPRay Gaming Inno Setup Installer
 #define MyAppName "CPRay Gaming"
-#define MyAppVersion "0.3.0"
+#define MyAppVersion "0.3.1"
 #define MyAppPublisher "CPRay Team"
 #define MyAppURL "https://github.com/ESp3cter/CPRay-Gaming"
 #define MyAppExeName "cpray_gaming.exe"
@@ -21,6 +21,10 @@ SetupIconFile=..\assets\app_icon.ico
 Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern
+ArchitecturesAllowed=x64compatible
+ArchitecturesInstallIn64BitMode=x64compatible
+CloseApplications=yes
+CloseApplicationsFilter=*.exe
 PrivilegesRequired=admin
 
 [Languages]

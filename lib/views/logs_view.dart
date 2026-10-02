@@ -15,6 +15,12 @@ class _LogsViewState extends State<LogsView> {
   bool _autoScroll = true;
 
   @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final vpnProvider = context.watch<VpnProvider>();
     final logs = vpnProvider.logs;
@@ -156,7 +162,8 @@ class _LogsViewState extends State<LogsView> {
                           child: Text(
                             line,
                             style: TextStyle(
-                              fontFamily: 'Consolas, monospace',
+                              fontFamily: 'Consolas',
+                              fontFamilyFallback: const ['Courier New', 'monospace'],
                               color: textColor,
                               fontSize: 12,
                               height: 1.35,

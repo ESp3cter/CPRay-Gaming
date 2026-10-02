@@ -25,7 +25,11 @@ class _ConnectButtonState extends State<ConnectButton> with SingleTickerProvider
     _animController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1600),
-    )..repeat(reverse: true);
+    );
+    // Only start animation if already in an animating state
+    if (widget.status == VpnStatus.connected || widget.status == VpnStatus.connecting) {
+      _animController.repeat(reverse: true);
+    }
 
     _pulseAnim = Tween<double>(begin: 0.95, end: 1.05).animate(
       CurvedAnimation(parent: _animController, curve: Curves.easeInOut),
@@ -36,6 +40,19 @@ class _ConnectButtonState extends State<ConnectButton> with SingleTickerProvider
   void dispose() {
     _animController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(covariant ConnectButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final isAnimating = widget.status == VpnStatus.connected || widget.status == VpnStatus.connecting;
+    final wasAnimating = oldWidget.status == VpnStatus.connected || oldWidget.status == VpnStatus.connecting;
+    if (isAnimating && !wasAnimating) {
+      _animController.repeat(reverse: true);
+    } else if (!isAnimating && wasAnimating) {
+      _animController.stop();
+      _animController.value = 0.0;
+    }
   }
 
   @override

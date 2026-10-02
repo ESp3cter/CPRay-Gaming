@@ -21,11 +21,21 @@ class UpdateInfo {
     
     // Find installer asset (.exe or .msix or zip)
     String url = '';
+    // Prioritize .exe installer over .zip archive
     for (final asset in assets) {
       final name = (asset['name'] as String? ?? '').toLowerCase();
-      if (name.endsWith('.exe') || name.endsWith('.zip')) {
+      if (name.endsWith('.exe')) {
         url = asset['browser_download_url'] as String? ?? '';
         break;
+      }
+    }
+    if (url.isEmpty) {
+      for (final asset in assets) {
+        final name = (asset['name'] as String? ?? '').toLowerCase();
+        if (name.endsWith('.zip')) {
+          url = asset['browser_download_url'] as String? ?? '';
+          break;
+        }
       }
     }
 
@@ -47,8 +57,11 @@ class UpdateInfo {
 
   static bool _isNewer(String remoteVer, String currentVer) {
     try {
-      final rParts = remoteVer.split('.').map(int.parse).toList();
-      final cParts = currentVer.split('.').map(int.parse).toList();
+      // Strip build metadata (+N) and pre-release tags (-beta, etc.)
+      final cleanRemote = remoteVer.split('+').first.split('-').first;
+      final cleanCurrent = currentVer.split('+').first.split('-').first;
+      final rParts = cleanRemote.split('.').map(int.parse).toList();
+      final cParts = cleanCurrent.split('.').map(int.parse).toList();
 
       for (int i = 0; i < 3; i++) {
         final r = i < rParts.length ? rParts[i] : 0;

@@ -86,6 +86,7 @@ class _WaveformPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    if (size.width <= 0 || size.height <= 0) return;
     final bgPaint = Paint()..color = const Color(0xFF0A0C14);
     canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), bgPaint);
 
@@ -149,5 +150,7 @@ class _WaveformPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _WaveformPainter oldDelegate) => true;
+  bool shouldRepaint(covariant _WaveformPainter oldDelegate) {
+    return oldDelegate.pingHistory != pingHistory;
+  }
 }
