@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import '../models/app_settings.dart';
 import '../models/server_config.dart';
 import '../services/audio_feedback_service.dart';
+import '../services/game_detector_service.dart';
 import '../services/localization_service.dart';
 import '../services/ping_service.dart';
 import '../services/storage_service.dart';
