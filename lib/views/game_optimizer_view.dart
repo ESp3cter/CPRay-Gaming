@@ -162,79 +162,85 @@ class _GameOptimizerViewState extends State<GameOptimizerView> {
           g.defaultExe.toLowerCase().contains(q);
     }).toList();
 
-    return Container(
-      color: const Color(0xFF090B10),
-      padding: const EdgeInsets.all(28),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Wrap(
-            alignment: WrapAlignment.spaceBetween,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 12,
-            runSpacing: 12,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isMobile = constraints.maxWidth < 700;
+
+        return Container(
+          color: const Color(0xFF090B10),
+          padding: EdgeInsets.all(isMobile ? 16 : 28),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    LocalizationService.tr('game_optimizer'),
-                    style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800),
-                  ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'Per-App Selective Routing: Only boosted games use the VPN tunnel while your PC stays direct.',
-                    style: TextStyle(color: Color(0xFF6B7A94), fontSize: 12),
-                  ),
-                ],
-              ),
+              // Header
               Wrap(
-                spacing: 8,
-                runSpacing: 8,
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 12,
+                runSpacing: 10,
                 children: [
-                  ElevatedButton.icon(
-                    onPressed: _isScanning ? null : _scanGames,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF141A2C),
-                      foregroundColor: const Color(0xFF00D4FF),
-                      side: const BorderSide(color: Color(0xFF00D4FF), width: 1.2),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    icon: _isScanning
-                        ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF00D4FF)))
-                        : const Icon(Icons.refresh_rounded, size: 16),
-                    label: Text(_isScanning ? 'Scanning PC...' : 'Rescan Games', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12)),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        LocalizationService.tr('game_optimizer'),
+                        style: TextStyle(color: Colors.white, fontSize: isMobile ? 18 : 20, fontWeight: FontWeight.w800),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        isMobile
+                            ? 'Per-App Routing: Boost games through VPN while other apps stay direct.'
+                            : 'Per-App Selective Routing: Only boosted games use the VPN tunnel while your PC stays direct.',
+                        style: const TextStyle(color: Color(0xFF6B7A94), fontSize: 12),
+                      ),
+                    ],
                   ),
-                  ElevatedButton.icon(
-                    onPressed: _browseAndAddGame,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF141A2C),
-                      foregroundColor: const Color(0xFF00FF88),
-                      side: const BorderSide(color: Color(0xFF00FF88), width: 1.2),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    icon: const Icon(Icons.folder_open_rounded, size: 16),
-                    label: const Text('Browse .exe', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12)),
-                  ),
-                  ElevatedButton.icon(
-                    onPressed: () => _showAddCustomGameDialog(context),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF00FF88),
-                      foregroundColor: const Color(0xFF090B10),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    icon: const Icon(Icons.add_rounded, size: 16),
-                    label: const Text('Add by Name', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12)),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      ElevatedButton.icon(
+                        onPressed: _isScanning ? null : _scanGames,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF141A2C),
+                          foregroundColor: const Color(0xFF00D4FF),
+                          side: const BorderSide(color: Color(0xFF00D4FF), width: 1.2),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        icon: _isScanning
+                            ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF00D4FF)))
+                            : const Icon(Icons.refresh_rounded, size: 16),
+                        label: Text(_isScanning ? 'Scanning...' : 'Rescan', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12)),
+                      ),
+                      ElevatedButton.icon(
+                        onPressed: _browseAndAddGame,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF141A2C),
+                          foregroundColor: const Color(0xFF00FF88),
+                          side: const BorderSide(color: Color(0xFF00FF88), width: 1.2),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        icon: const Icon(Icons.folder_open_rounded, size: 16),
+                        label: const Text('Browse', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12)),
+                      ),
+                      ElevatedButton.icon(
+                        onPressed: () => _showAddCustomGameDialog(context),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF00FF88),
+                          foregroundColor: const Color(0xFF090B10),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        icon: const Icon(Icons.add_rounded, size: 16),
+                        label: const Text('Add by Name', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12)),
+                      ),
+                    ],
                   ),
                 ],
               ),
-            ],
-          ),
 
           const SizedBox(height: 18),
 
@@ -389,11 +395,11 @@ class _GameOptimizerViewState extends State<GameOptimizerView> {
                         ),
                       )
                     : GridView.builder(
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: isMobile ? 1 : 2,
                           crossAxisSpacing: 14,
                           mainAxisSpacing: 14,
-                          childAspectRatio: 2.3,
+                          childAspectRatio: isMobile ? 3.0 : 2.3,
                         ),
                         itemCount: filteredGames.length,
                         itemBuilder: (context, index) {
@@ -517,5 +523,7 @@ class _GameOptimizerViewState extends State<GameOptimizerView> {
         ],
       ),
     );
+  },
+);
   }
 }

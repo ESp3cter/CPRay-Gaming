@@ -39,6 +39,7 @@ windows/runner/Debug/
 android/local.properties
 android/.gradle/
 android/app/build/
+android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java
 *.apk
 *.aab
 *.jks

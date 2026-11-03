@@ -184,50 +184,54 @@ class _ServerListViewState extends State<ServerListView> {
       }
     }
 
-    return Container(
-      color: const Color(0xFF090B10),
-      padding: const EdgeInsets.all(28),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header & Action Bar
-          Wrap(
-            alignment: WrapAlignment.spaceBetween,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 12,
-            runSpacing: 12,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isMobile = constraints.maxWidth < 700;
+
+        return Container(
+          color: const Color(0xFF090B10),
+          padding: EdgeInsets.all(isMobile ? 16 : 28),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                mainAxisSize: MainAxisSize.min,
+              // Header & Action Bar
+              Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 12,
+                runSpacing: 10,
                 children: [
-                  if (Navigator.canPop(context)) ...[
-                    IconButton(
-                      icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF00D4FF), size: 24),
-                      tooltip: 'Back to Dashboard',
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
-                    const SizedBox(width: 8),
-                  ],
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Text(
-                        'Servers & Gaming Nodes',
-                        style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${serverProvider.servers.length} nodes loaded • Smart Gaming Intelligence Analyzer',
-                        style: const TextStyle(color: Color(0xFF6B7A94), fontSize: 12),
+                      if (Navigator.canPop(context)) ...[
+                        IconButton(
+                          icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF00D4FF), size: 24),
+                          tooltip: 'Back to Dashboard',
+                          onPressed: () => Navigator.of(context).pop(),
+                        ),
+                        const SizedBox(width: 8),
+                      ],
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'Servers & Gaming Nodes',
+                            style: TextStyle(color: Colors.white, fontSize: isMobile ? 18 : 20, fontWeight: FontWeight.w800),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${serverProvider.servers.length} nodes loaded • Smart Gaming Analyzer',
+                            style: const TextStyle(color: Color(0xFF6B7A94), fontSize: 12),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                ],
-              ),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   // Auto-Pick Best Gaming Node Button
@@ -430,5 +434,7 @@ class _ServerListViewState extends State<ServerListView> {
         ],
       ),
     );
+  },
+);
   }
 }

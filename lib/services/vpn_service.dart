@@ -70,10 +70,6 @@ class VpnService {
     } catch (_) {}
   }
 
-  static Future<String> _getSingboxPath() async {
-    return _ensureSingboxBinary();
-  }
-
   static Future<String> _ensureSingboxBinary() async {
     if (!Platform.isWindows) return '';
 

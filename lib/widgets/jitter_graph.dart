@@ -15,51 +15,64 @@ class JitterGraphWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF10131E),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFF1E2438)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final chartWidget = ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: CustomPaint(
+            painter: _WaveformPainter(pingHistory: pingHistory),
+            size: Size.infinite,
+          ),
+        );
+
+        return Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: const Color(0xFF10131E),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: const Color(0xFF1E2438)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: const [
-                  Icon(Icons.show_chart_rounded, color: Color(0xFF00FF88), size: 18),
-                  SizedBox(width: 8),
-                  Text(
-                    'Real-Time Gaming Stability & Jitter',
-                    style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w800),
+              Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 8,
+                runSpacing: 6,
+                children: [
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: const [
+                      Icon(Icons.show_chart_rounded, color: Color(0xFF00FF88), size: 18),
+                      SizedBox(width: 8),
+                      Text(
+                        'Stability & Jitter',
+                        style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w800),
+                      ),
+                    ],
+                  ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _buildMetricBadge('Jitter: ${currentJitter.toStringAsFixed(1)} ms', const Color(0xFF00D4FF)),
+                      const SizedBox(width: 8),
+                      _buildMetricBadge(
+                        'Loss: ${packetLoss.toStringAsFixed(0)}%',
+                        packetLoss > 0 ? const Color(0xFFFF3366) : const Color(0xFF00FF88),
+                      ),
+                    ],
                   ),
                 ],
               ),
-              Row(
-                children: [
-                  _buildMetricBadge('Jitter: ${currentJitter.toStringAsFixed(1)} ms', const Color(0xFF00D4FF)),
-                  const SizedBox(width: 8),
-                  _buildMetricBadge('Loss: ${packetLoss.toStringAsFixed(0)}%',
-                      packetLoss > 0 ? const Color(0xFFFF3366) : const Color(0xFF00FF88)),
-                ],
-              ),
+              const SizedBox(height: 12),
+              constraints.hasBoundedHeight
+                  ? Expanded(child: chartWidget)
+                  : SizedBox(height: 130, child: chartWidget),
             ],
           ),
-          const SizedBox(height: 14),
-          Expanded(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: CustomPaint(
-                painter: _WaveformPainter(pingHistory: pingHistory),
-                size: Size.infinite,
-              ),
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 

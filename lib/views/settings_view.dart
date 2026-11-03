@@ -71,20 +71,24 @@ class _SettingsViewState extends State<SettingsView> {
 
     return Directionality(
       textDirection: LocalizationService.direction,
-      child: Container(
-        color: const Color(0xFF090B10),
-        padding: const EdgeInsets.all(28),
-        child: ListView(
-          children: [
-            Text(
-              LocalizationService.tr('settings'),
-              style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(height: 4),
-            const Text(
-              'Fine-tune your tunnel, anti-sanction resolvers, sound effects, and preferences',
-              style: TextStyle(color: Color(0xFF6B7A94), fontSize: 12),
-            ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isMobile = constraints.maxWidth < 700;
+
+          return Container(
+            color: const Color(0xFF090B10),
+            padding: EdgeInsets.all(isMobile ? 16 : 28),
+            child: ListView(
+              children: [
+                Text(
+                  LocalizationService.tr('settings'),
+                  style: TextStyle(color: Colors.white, fontSize: isMobile ? 18 : 20, fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  'Fine-tune your tunnel, anti-sanction resolvers, sound effects, and preferences',
+                  style: TextStyle(color: Color(0xFF6B7A94), fontSize: 12),
+                ),
             const SizedBox(height: 24),
 
             _buildSectionHeader('LANGUAGE & REGION / زبان'),
@@ -272,12 +276,12 @@ class _SettingsViewState extends State<SettingsView> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: const [
                       Text(
-                        'CPRay-Gaming Desktop Suite',
+                        'CPRay Gaming Suite',
                         style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w800),
                       ),
                       SizedBox(height: 2),
                       Text(
-                        'Version 0.3.3 (Sing-box Core 1.14+)',
+                        'Version 0.3.4 (Sing-box Core 1.14+)',
                         style: TextStyle(color: Color(0xFF6B7A94), fontSize: 12),
                       ),
                     ],
@@ -304,8 +308,10 @@ class _SettingsViewState extends State<SettingsView> {
             ),
           ],
         ),
-      ),
-    );
+      );
+    },
+  ),
+);
   }
 
   Widget _buildSectionHeader(String title) {

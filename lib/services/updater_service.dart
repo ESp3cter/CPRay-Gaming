@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../models/update_info.dart';
 import 'vpn_service.dart';
 
@@ -36,6 +37,17 @@ class UpdaterService {
     required String downloadUrl,
     required Function(double progress, int receivedBytes, int totalBytes) onProgress,
   }) async {
+    // On Android, launch direct APK download in external browser/installer
+    if (Platform.isAndroid) {
+      final uri = Uri.parse(downloadUrl);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+        return;
+      } else {
+        throw 'Could not open download link: $downloadUrl';
+      }
+    }
+
     final client = http.Client();
     try {
       final request = http.Request('GET', Uri.parse(downloadUrl));

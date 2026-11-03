@@ -9,7 +9,7 @@ class LocalizationService {
   static final Map<String, Map<String, String>> _localizedValues = {
     'en': {
       'app_title': 'CPRay Gaming',
-      'app_subtitle': 'GAMING DESKTOP',
+      'app_subtitle': 'GAMING SUITE',
       'dashboard': 'Dashboard',
       'game_optimizer': 'Game Optimizer (Per-App)',
       'game_ping_tester': 'Game Ping Tester (100+ Games)',
@@ -46,7 +46,7 @@ class LocalizationService {
     },
     'fa': {
       'app_title': 'سی پی ری گیمینگ',
-      'app_subtitle': 'کلاینت گیمینگ دسکتاپ',
+      'app_subtitle': 'سوئیت گیمینگ',
       'dashboard': 'داشبورد',
       'game_optimizer': 'شتاب‌دهنده بازی‌ها (انتخابی)',
       'game_ping_tester': 'تست پینگ ۱۰۰ بازی',

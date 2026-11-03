@@ -46,47 +46,53 @@ class _GamePingTesterViewState extends State<GamePingTesterView> {
       return true;
     }).toList();
 
-    return Container(
-      color: const Color(0xFF090B10),
-      padding: const EdgeInsets.all(28),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Wrap(
-            alignment: WrapAlignment.spaceBetween,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 12,
-            runSpacing: 12,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isMobile = constraints.maxWidth < 700;
+
+        return Container(
+          color: const Color(0xFF090B10),
+          padding: EdgeInsets.all(isMobile ? 16 : 28),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
+              // Header
+              Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 12,
+                runSpacing: 10,
                 children: [
-                  Text(
-                    LocalizationService.tr('game_ping_tester'),
-                    style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        LocalizationService.tr('game_ping_tester'),
+                        style: TextStyle(color: Colors.white, fontSize: isMobile ? 18 : 20, fontWeight: FontWeight.w800),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        isMobile
+                            ? 'Direct ping latency to 100+ global competitive game clusters'
+                            : 'Direct ping latency measurements to 100+ global competitive game clusters & voice gateways',
+                        style: const TextStyle(color: Color(0xFF6B7A94), fontSize: 12),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Direct ping latency measurements to 100+ global competitive game clusters & voice gateways',
-                    style: const TextStyle(color: Color(0xFF6B7A94), fontSize: 12),
+                  ElevatedButton.icon(
+                    onPressed: () => serverProvider.testAllGameTargets(),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF00D4FF),
+                      foregroundColor: const Color(0xFF090B10),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    icon: const Icon(Icons.bolt_rounded, size: 16),
+                    label: const Text('Test All 100 Games', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12)),
                   ),
                 ],
               ),
-              ElevatedButton.icon(
-                onPressed: () => serverProvider.testAllGameTargets(),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF00D4FF),
-                  foregroundColor: const Color(0xFF090B10),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-                icon: const Icon(Icons.bolt_rounded, size: 16),
-                label: const Text('Test All 100 Games', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12)),
-              ),
-            ],
-          ),
 
           const SizedBox(height: 18),
 
@@ -194,11 +200,11 @@ class _GamePingTesterViewState extends State<GamePingTesterView> {
           // Grid of 100 Game Targets
           Expanded(
             child: GridView.builder(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: isMobile ? 1 : 2,
                 crossAxisSpacing: 12,
                 mainAxisSpacing: 12,
-                childAspectRatio: 2.5,
+                childAspectRatio: isMobile ? 3.3 : 2.5,
               ),
               itemCount: filtered.length,
               itemBuilder: (context, index) {
@@ -315,5 +321,7 @@ class _GamePingTesterViewState extends State<GamePingTesterView> {
         ],
       ),
     );
+  },
+);
   }
 }

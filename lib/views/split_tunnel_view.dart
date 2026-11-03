@@ -90,83 +90,95 @@ class _SplitTunnelViewState extends State<SplitTunnelView> {
     final splitMode = settings.splitTunnelMode;
     final appList = settings.splitTunnelApps;
 
-    return Container(
-      color: const Color(0xFF090B10),
-      padding: const EdgeInsets.all(28),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: const [
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isMobile = constraints.maxWidth < 700;
+
+        final modeCards = [
+          _buildModeCard(
+            title: 'Disabled',
+            subtitle: 'All apps route through VPN tunnel',
+            icon: Icons.all_inclusive_rounded,
+            isSelected: splitMode == SplitTunnelMode.disabled,
+            accentColor: const Color(0xFF00D4FF),
+            onTap: () => vpnProvider.setSplitTunneling(SplitTunnelMode.disabled, appList),
+          ),
+          _buildModeCard(
+            title: 'Inclusive Mode',
+            subtitle: 'ONLY listed games/apps route through VPN',
+            icon: Icons.check_circle_outline_rounded,
+            isSelected: splitMode == SplitTunnelMode.inclusive,
+            accentColor: const Color(0xFF00FF88),
+            onTap: () => vpnProvider.setSplitTunneling(SplitTunnelMode.inclusive, appList),
+          ),
+          _buildModeCard(
+            title: 'Exclusive Mode',
+            subtitle: 'Route all traffic EXCEPT listed apps',
+            icon: Icons.remove_circle_outline_rounded,
+            isSelected: splitMode == SplitTunnelMode.exclusive,
+            accentColor: const Color(0xFFFFB300),
+            onTap: () => vpnProvider.setSplitTunneling(SplitTunnelMode.exclusive, appList),
+          ),
+        ];
+
+        return Container(
+          color: const Color(0xFF090B10),
+          padding: EdgeInsets.all(isMobile ? 16 : 28),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     'Split Tunneling & App Routing',
-                    style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800),
+                    style: TextStyle(color: Colors.white, fontSize: isMobile ? 18 : 20, fontWeight: FontWeight.w800),
                   ),
-                  SizedBox(height: 4),
-                  Text(
+                  const SizedBox(height: 4),
+                  const Text(
                     'Choose which games or programs route through the VPN tunnel',
                     style: TextStyle(color: Color(0xFF6B7A94), fontSize: 12),
                   ),
                 ],
               ),
-            ],
-          ),
 
-          const SizedBox(height: 24),
+              const SizedBox(height: 18),
 
-          // Mode Selector Cards (Disabled, Inclusive, Exclusive)
-          Row(
-            children: [
-              Expanded(
-                child: _buildModeCard(
-                  title: 'Disabled',
-                  subtitle: 'All PC programs route through VPN tunnel',
-                  icon: Icons.all_inclusive_rounded,
-                  isSelected: splitMode == SplitTunnelMode.disabled,
-                  accentColor: const Color(0xFF00D4FF),
-                  onTap: () => vpnProvider.setSplitTunneling(SplitTunnelMode.disabled, appList),
+              // Mode Selector Cards (Disabled, Inclusive, Exclusive)
+              if (isMobile)
+                Column(
+                  children: [
+                    modeCards[0],
+                    const SizedBox(height: 8),
+                    modeCards[1],
+                    const SizedBox(height: 8),
+                    modeCards[2],
+                  ],
+                )
+              else
+                Row(
+                  children: [
+                    Expanded(child: modeCards[0]),
+                    const SizedBox(width: 14),
+                    Expanded(child: modeCards[1]),
+                    const SizedBox(width: 14),
+                    Expanded(child: modeCards[2]),
+                  ],
                 ),
-              ),
-              const SizedBox(width: 14),
+
+              const SizedBox(height: 18),
+
+              // Dynamic Body
               Expanded(
-                child: _buildModeCard(
-                  title: 'Inclusive Mode',
-                  subtitle: 'ONLY listed games/apps route through VPN',
-                  icon: Icons.check_circle_outline_rounded,
-                  isSelected: splitMode == SplitTunnelMode.inclusive,
-                  accentColor: const Color(0xFF00FF88),
-                  onTap: () => vpnProvider.setSplitTunneling(SplitTunnelMode.inclusive, appList),
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: _buildModeCard(
-                  title: 'Exclusive Mode',
-                  subtitle: 'Route all PC traffic EXCEPT listed apps',
-                  icon: Icons.remove_circle_outline_rounded,
-                  isSelected: splitMode == SplitTunnelMode.exclusive,
-                  accentColor: const Color(0xFFFFB300),
-                  onTap: () => vpnProvider.setSplitTunneling(SplitTunnelMode.exclusive, appList),
-                ),
+                child: splitMode != SplitTunnelMode.disabled
+                    ? _buildActiveSplitContent(context, appList)
+                    : _buildDisabledContent(),
               ),
             ],
           ),
-
-          const SizedBox(height: 24),
-
-          // Dynamic Body
-          Expanded(
-            child: splitMode != SplitTunnelMode.disabled
-                ? _buildActiveSplitContent(context, appList)
-                : _buildDisabledContent(),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 

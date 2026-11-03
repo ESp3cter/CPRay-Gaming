@@ -31,89 +31,100 @@ class _LogsViewState extends State<LogsView> {
       });
     }
 
-    return Container(
-      color: const Color(0xFF090B10),
-      padding: const EdgeInsets.all(28),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header & Toolbar
-          Row(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isMobile = constraints.maxWidth < 700;
+
+        return Container(
+          color: const Color(0xFF090B10),
+          padding: EdgeInsets.all(isMobile ? 16 : 28),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              // Header & Toolbar
+              Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 12,
+                runSpacing: 10,
                 children: [
-                  const Text(
-                    'Sing-box Core Live Terminal',
-                    style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Sing-box Core Live Terminal',
+                        style: TextStyle(color: Colors.white, fontSize: isMobile ? 18 : 20, fontWeight: FontWeight.w800),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${logs.length} entries recorded • Real-time stdout & diagnostics',
+                        style: const TextStyle(color: Color(0xFF6B7A94), fontSize: 12),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${logs.length} entries recorded • Real-time stdout & diagnostics',
-                    style: const TextStyle(color: Color(0xFF6B7A94), fontSize: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      // Auto Scroll Toggle
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          setState(() => _autoScroll = !_autoScroll);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF141A2C),
+                          foregroundColor: _autoScroll ? const Color(0xFF00FF88) : const Color(0xFF7E8B9E),
+                          side: BorderSide(
+                            color: _autoScroll ? const Color(0xFF00FF88) : const Color(0xFF242A42),
+                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        icon: Icon(
+                          _autoScroll ? Icons.vertical_align_bottom_rounded : Icons.pause_rounded,
+                          size: 16,
+                        ),
+                        label: Text(_autoScroll ? 'Auto-Scroll ON' : 'PAUSED', style: const TextStyle(fontSize: 12)),
+                      ),
+                      // Clear / Reset Logs Button
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          vpnProvider.clearLogs();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Console logs cleared!')),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF1A1424),
+                          foregroundColor: const Color(0xFFFF3366),
+                          side: const BorderSide(color: Color(0xFFFF3366), width: 1.2),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        icon: const Icon(Icons.delete_sweep_rounded, size: 16),
+                        label: const Text('Reset', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),
+                      ),
+                      // Copy Logs Button
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          Clipboard.setData(ClipboardData(text: logs.join('\n')));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Logs copied to clipboard!')),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF00D4FF),
+                          foregroundColor: const Color(0xFF090B10),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        icon: const Icon(Icons.copy_rounded, size: 16),
+                        label: const Text('Copy All', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),
+                      ),
+                    ],
                   ),
                 ],
               ),
-              const Spacer(),
-              // Auto Scroll Toggle
-              ElevatedButton.icon(
-                onPressed: () {
-                  setState(() => _autoScroll = !_autoScroll);
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF141A2C),
-                  foregroundColor: _autoScroll ? const Color(0xFF00FF88) : const Color(0xFF7E8B9E),
-                  side: BorderSide(
-                    color: _autoScroll ? const Color(0xFF00FF88) : const Color(0xFF242A42),
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
-                icon: Icon(
-                  _autoScroll ? Icons.vertical_align_bottom_rounded : Icons.pause_rounded,
-                  size: 16,
-                ),
-                label: Text(_autoScroll ? 'Auto-Scroll ON' : 'Auto-Scroll PAUSED', style: const TextStyle(fontSize: 12)),
-              ),
-              const SizedBox(width: 10),
-              // Clear / Reset Logs Button
-              ElevatedButton.icon(
-                onPressed: () {
-                  vpnProvider.clearLogs();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Console logs cleared!')),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1A1424),
-                  foregroundColor: const Color(0xFFFF3366),
-                  side: const BorderSide(color: Color(0xFFFF3366), width: 1.2),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
-                icon: const Icon(Icons.delete_sweep_rounded, size: 16),
-                label: const Text('Reset Logs', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),
-              ),
-              const SizedBox(width: 10),
-              // Copy Logs Button
-              ElevatedButton.icon(
-                onPressed: () {
-                  Clipboard.setData(ClipboardData(text: logs.join('\n')));
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Logs copied to clipboard!')),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF00D4FF),
-                  foregroundColor: const Color(0xFF090B10),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
-                icon: const Icon(Icons.copy_rounded, size: 16),
-                label: const Text('Copy All', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),
-              ),
-            ],
-          ),
 
           const SizedBox(height: 20),
 
@@ -177,5 +188,7 @@ class _LogsViewState extends State<LogsView> {
         ],
       ),
     );
+  },
+);
   }
 }

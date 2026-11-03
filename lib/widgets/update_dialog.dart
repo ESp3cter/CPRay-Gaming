@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import '../models/update_info.dart';
 import '../services/updater_service.dart';
@@ -25,11 +26,23 @@ class _UpdateDialogState extends State<UpdateDialog> {
   Future<void> _startUpdate() async {
     setState(() {
       _isDownloading = true;
-      _statusText = 'Downloading update package...';
+      _statusText = Platform.isAndroid ? 'Launching APK download in browser...' : 'Downloading update package...';
       _errorMessage = null;
     });
 
     try {
+      if (Platform.isAndroid) {
+        await UpdaterService.downloadAndApplyUpdate(
+          downloadUrl: widget.updateInfo.downloadUrl,
+          onProgress: (_, __, ___) {},
+        );
+        await Future.delayed(const Duration(milliseconds: 1000));
+        if (mounted) {
+          Navigator.of(context).pop();
+        }
+        return;
+      }
+
       await UpdaterService.downloadAndApplyUpdate(
         downloadUrl: widget.updateInfo.downloadUrl,
         onProgress: (progress, received, total) {
@@ -163,9 +176,11 @@ class _UpdateDialogState extends State<UpdateDialog> {
                 ),
               ),
               const SizedBox(height: 10),
-              const Text(
-                'The app will automatically install and restart upon download completion.',
-                style: TextStyle(color: Color(0xFF6B7A94), fontSize: 11),
+              Text(
+                Platform.isAndroid
+                    ? 'The APK download will launch in your browser. Tap it once downloaded to install.'
+                    : 'The app will automatically install and restart upon download completion.',
+                style: const TextStyle(color: Color(0xFF6B7A94), fontSize: 11),
               ),
             ],
             if (_errorMessage != null) ...[
@@ -190,9 +205,9 @@ class _UpdateDialogState extends State<UpdateDialog> {
                     ),
                   ),
                   icon: const Icon(Icons.system_update_alt_rounded, size: 18),
-                  label: const Text(
-                    'Install & Restart Now',
-                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+                  label: Text(
+                    Platform.isAndroid ? 'Download & Install APK' : 'Install & Restart Now',
+                    style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
                   ),
                 ),
               ),
