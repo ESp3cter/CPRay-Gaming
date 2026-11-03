@@ -20,6 +20,37 @@ class UpdaterService {
   static File? downloadedFile;
   static UpdateInfo? readyUpdate;
 
+  static Future<File> getPersistentInstallerFile(String version) async {
+    final baseDir = await getApplicationSupportDirectory();
+    final updatesDir = Directory(p.join(baseDir.path, 'updates'));
+    if (!await updatesDir.exists()) {
+      await updatesDir.create(recursive: true);
+    }
+    final ext = Platform.isAndroid ? '.apk' : (Platform.isWindows ? '.exe' : '');
+    final appSlug = FlavorConfig.isVpn ? 'vpn' : 'gaming';
+    final fileName = 'cpray_${appSlug}_v$version$ext';
+    return File(p.join(updatesDir.path, fileName));
+  }
+
+  static Future<File?> _copyToPublicDownloads(File source, String version) async {
+    if (!Platform.isAndroid) return null;
+    try {
+      final appName = FlavorConfig.isVpn ? 'CPRay-VPN' : 'CPRay-Gaming';
+      final downloadDirs = ['/storage/emulated/0/Download', '/sdcard/Download'];
+      for (final dirPath in downloadDirs) {
+        final dir = Directory(dirPath);
+        if (await dir.exists()) {
+          final target = File(p.join(dirPath, '$appName-v$version.apk'));
+          if (!await target.exists() || await target.length() != await source.length()) {
+            return await source.copy(target.path);
+          }
+          return target;
+        }
+      }
+    } catch (_) {}
+    return null;
+  }
+
   static Future<UpdateInfo?> checkForUpdates() async {
     try {
       final packageInfo = await PackageInfo.fromPlatform();
@@ -54,19 +85,19 @@ class UpdaterService {
 
     readyUpdate = update;
 
-    final tempDir = await getTemporaryDirectory();
-    final ext = Platform.isAndroid ? '.apk' : (Platform.isWindows ? '.exe' : '');
-    final appSlug = FlavorConfig.isVpn ? 'vpn' : 'gaming';
-    final completedFileName = 'cpray_${appSlug}_v${update.version}$ext';
-    final completedFile = File(p.join(tempDir.path, completedFileName));
+    // Persist file in application support directory so Android OS never purges it
+    final completedFile = await getPersistentInstallerFile(update.version);
 
-    // If already downloaded and valid, notify immediately
+    // If already downloaded and valid, NEVER re-download!
     if (await completedFile.exists()) {
       final length = await completedFile.length();
       if (length > 1024 * 1024) {
         downloadedFile = completedFile;
         isDownloading = false;
         downloadProgress = 1.0;
+        if (Platform.isAndroid) {
+          _copyToPublicDownloads(completedFile, update.version);
+        }
         onReadyToInstall?.call(update, completedFile);
         return;
       } else {
@@ -80,7 +111,7 @@ class UpdaterService {
     isDownloading = true;
     downloadProgress = 0.0;
 
-    final partFile = File(p.join(tempDir.path, '$completedFileName.part'));
+    final partFile = File('${completedFile.path}.part');
     if (await partFile.exists()) {
       try {
         await partFile.delete();
@@ -122,6 +153,10 @@ class UpdaterService {
         downloadProgress = 1.0;
         isDownloading = false;
 
+        if (Platform.isAndroid) {
+          await _copyToPublicDownloads(completedFile, update.version);
+        }
+
         onReadyToInstall?.call(update, completedFile);
       } else {
         isDownloading = false;
@@ -143,13 +178,11 @@ class UpdaterService {
     } catch (_) {}
 
     if (Platform.isAndroid) {
-      final openResult = await OpenFilex.open(installerFile.path);
-      if (openResult.type != ResultType.done && readyUpdate?.downloadUrl != null && readyUpdate!.downloadUrl.isNotEmpty) {
-        final uri = Uri.parse(readyUpdate!.downloadUrl);
-        if (await canLaunchUrl(uri)) {
-          await launchUrl(uri, mode: LaunchMode.externalApplication);
-        }
+      if (readyUpdate != null) {
+        await _copyToPublicDownloads(installerFile, readyUpdate!.version);
       }
+      // Open the package installer directly over the persistent APK
+      await OpenFilex.open(installerFile.path);
       return;
     }
 
@@ -185,6 +218,17 @@ class UpdaterService {
     required String downloadUrl,
     required Function(double progress, int receivedBytes, int totalBytes) onProgress,
   }) async {
+    final update = readyUpdate ?? await checkForUpdates();
+    final version = update?.version ?? 'latest';
+    final installerFile = await getPersistentInstallerFile(version);
+
+    if (await installerFile.exists() && await installerFile.length() > 1024 * 1024) {
+      downloadedFile = installerFile;
+      onProgress(1.0, await installerFile.length(), await installerFile.length());
+      await applyDownloadedUpdate(installerFile);
+      return;
+    }
+
     final client = http.Client();
     try {
       final request = http.Request('GET', Uri.parse(downloadUrl));
@@ -194,14 +238,14 @@ class UpdaterService {
       final totalBytes = response.contentLength ?? 0;
       int receivedBytes = 0;
 
-      final tempDir = await getTemporaryDirectory();
-      final fileName = Platform.isAndroid ? 'cpray_update.apk' : 'cpray_update_setup.exe';
-      final installerFile = File(p.join(tempDir.path, fileName));
-      if (await installerFile.exists()) {
-        await installerFile.delete();
+      final partFile = File('${installerFile.path}.part');
+      if (await partFile.exists()) {
+        try {
+          await partFile.delete();
+        } catch (_) {}
       }
 
-      final sink = installerFile.openWrite();
+      final sink = partFile.openWrite();
 
       await response.stream.listen((chunk) {
         receivedBytes += chunk.length;
@@ -214,6 +258,14 @@ class UpdaterService {
 
       await sink.flush();
       await sink.close();
+
+      if (await partFile.exists()) {
+        if (await installerFile.exists()) {
+          await installerFile.delete();
+        }
+        await partFile.rename(installerFile.path);
+        downloadedFile = installerFile;
+      }
 
       await applyDownloadedUpdate(installerFile);
     } finally {

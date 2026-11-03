@@ -25,7 +25,7 @@ class _UpdateReadyDialogState extends State<UpdateReadyDialog> {
     setState(() => _isInstalling = true);
     await UpdaterService.applyDownloadedUpdate(widget.installerFile);
     if (mounted) {
-      Navigator.of(context).pop();
+      setState(() => _isInstalling = false);
     }
   }
 
@@ -99,7 +99,7 @@ class _UpdateReadyDialogState extends State<UpdateReadyDialog> {
               const SizedBox(height: 14),
               if (widget.updateInfo.changelog.isNotEmpty) ...[
                 Container(
-                  constraints: const BoxConstraints(maxHeight: 120),
+                  constraints: const BoxConstraints(maxHeight: 100),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: const Color(0xFF0D0F1A),
@@ -117,7 +117,35 @@ class _UpdateReadyDialogState extends State<UpdateReadyDialog> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 18),
+                const SizedBox(height: 14),
+              ],
+              if (Platform.isAndroid) ...[
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1E1A14),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFFFFB300).withOpacity(0.4)),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.security_rounded, color: Color(0xFFFFB300), size: 18),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          LocalizationService.tr('play_protect_hint'),
+                          style: const TextStyle(
+                            color: Color(0xFFFFDF99),
+                            fontSize: 11,
+                            height: 1.35,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
               ],
               Row(
                 children: [

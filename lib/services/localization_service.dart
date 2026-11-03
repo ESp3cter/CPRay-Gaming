@@ -106,6 +106,9 @@ class LocalizationService {
       'split_tunneling_desc': 'Choose which apps use the VPN and which bypass it',
       'switch_location': 'Switch',
       'tap_to_choose': 'Tap to choose or import servers',
+      'play_protect_hint': 'Play Protect Note: If Google Play displays an "Unrecognized Developer" prompt, tap "More details" then "Install anyway". The app is 100% verified, open-source & secure.',
+      'apk_saved_downloads': 'Update APK is also saved to your phone\'s Download folder.',
+      'open_downloads': 'Open Downloads Folder',
     },
     'fa': {
       'app_title': 'سی پی ری گیمینگ',
@@ -198,6 +201,9 @@ class LocalizationService {
       'split_tunneling_desc': 'انتخاب برنامه‌هایی که از تانل رد شوند یا دور بزنند',
       'switch_location': 'تغییر',
       'tap_to_choose': 'برای انتخاب یا افزودن سرور ضربه بزنید',
+      'play_protect_hint': 'نکته محافظ گوگل: در صورت نمایش پیام «برنامه ناشناخته است»، کافیست روی «جزئیات بیشتر» (More details) و سپس «نصب به هر حال» (Install anyway) ضربه بزنید. سی‌پی‌ری امن و متن‌باز است.',
+      'apk_saved_downloads': 'فایل نصبی آپدیت در پوشه دانلودها (Download) نیز ذخیره شد.',
+      'open_downloads': 'باز کردن پوشه دانلودها',
     },
   };
 

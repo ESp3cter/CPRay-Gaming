@@ -254,7 +254,7 @@ class _VpnSettingsViewState extends State<VpnSettingsView> {
                         ),
                         const SizedBox(height: 2),
                         const Text(
-                          'Version 0.3.11 (Sing-box Core 1.14+)',
+                          'Version 0.3.12 (Sing-box Core 1.14+)',
                           style: TextStyle(color: Color(0xFF6B7A94), fontSize: 11),
                         ),
                       ],
