@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:open_filex/open_filex.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -37,17 +38,6 @@ class UpdaterService {
     required String downloadUrl,
     required Function(double progress, int receivedBytes, int totalBytes) onProgress,
   }) async {
-    // On Android, launch direct APK download in external browser/installer
-    if (Platform.isAndroid) {
-      final uri = Uri.parse(downloadUrl);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-        return;
-      } else {
-        throw 'Could not open download link: $downloadUrl';
-      }
-    }
-
     final client = http.Client();
     try {
       final request = http.Request('GET', Uri.parse(downloadUrl));
@@ -58,7 +48,8 @@ class UpdaterService {
       int receivedBytes = 0;
 
       final tempDir = await getTemporaryDirectory();
-      final installerFile = File(p.join(tempDir.path, 'cpray_update_setup.exe'));
+      final fileName = Platform.isAndroid ? 'cpray_update.apk' : 'cpray_update_setup.exe';
+      final installerFile = File(p.join(tempDir.path, fileName));
       if (await installerFile.exists()) {
         await installerFile.delete();
       }
@@ -80,6 +71,19 @@ class UpdaterService {
       // Ensure VPN tunnel is cleanly closed before replacing binaries
       await VpnService.stopVpn();
 
+      if (Platform.isAndroid) {
+        // Trigger Android package installer directly over the downloaded APK
+        final openResult = await OpenFilex.open(installerFile.path);
+        if (openResult.type != ResultType.done) {
+          // Fallback to browser if user has custom permission blocks
+          final uri = Uri.parse(downloadUrl);
+          if (await canLaunchUrl(uri)) {
+            await launchUrl(uri, mode: LaunchMode.externalApplication);
+          }
+        }
+        return;
+      }
+
       if (Platform.isWindows) {
         // Launch a resilient supervisor script that runs Inno Setup and guarantees application relaunch
         final programFiles = Platform.environment['ProgramFiles'] ?? r'C:\Program Files';
@@ -98,16 +102,15 @@ class UpdaterService {
           ['-NoProfile', '-WindowStyle', 'Hidden', '-Command', script],
           mode: ProcessStartMode.detached,
         );
+        exit(0);
       } else {
         await Process.start(
           installerFile.path,
           [],
           mode: ProcessStartMode.detached,
         );
+        exit(0);
       }
-
-      // Exit current running instance so installer can update files cleanly
-      exit(0);
     } finally {
       client.close();
     }

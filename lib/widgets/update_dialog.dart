@@ -26,23 +26,11 @@ class _UpdateDialogState extends State<UpdateDialog> {
   Future<void> _startUpdate() async {
     setState(() {
       _isDownloading = true;
-      _statusText = Platform.isAndroid ? 'Launching APK download in browser...' : 'Downloading update package...';
+      _statusText = 'Downloading update package...';
       _errorMessage = null;
     });
 
     try {
-      if (Platform.isAndroid) {
-        await UpdaterService.downloadAndApplyUpdate(
-          downloadUrl: widget.updateInfo.downloadUrl,
-          onProgress: (_, __, ___) {},
-        );
-        await Future.delayed(const Duration(milliseconds: 1000));
-        if (mounted) {
-          Navigator.of(context).pop();
-        }
-        return;
-      }
-
       await UpdaterService.downloadAndApplyUpdate(
         downloadUrl: widget.updateInfo.downloadUrl,
         onProgress: (progress, received, total) {
@@ -52,7 +40,9 @@ class _UpdateDialogState extends State<UpdateDialog> {
               _received = received;
               _total = total;
               if (progress >= 1.0) {
-                _statusText = 'Applying update and restarting CPRay Gaming...';
+                _statusText = Platform.isAndroid
+                    ? 'Download complete! Opening package installer...'
+                    : 'Applying update and restarting CPRay Gaming...';
               } else {
                 _statusText = 'Downloading: ${(progress * 100).toStringAsFixed(0)}% '
                     '(${(_received / (1024 * 1024)).toStringAsFixed(1)} MB / '
@@ -62,6 +52,10 @@ class _UpdateDialogState extends State<UpdateDialog> {
           }
         },
       );
+
+      if (Platform.isAndroid && mounted) {
+        Navigator.of(context).pop();
+      }
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -178,7 +172,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
               const SizedBox(height: 10),
               Text(
                 Platform.isAndroid
-                    ? 'The APK download will launch in your browser. Tap it once downloaded to install.'
+                    ? 'The update downloads inside the app. Once finished, tap Update on the Android installer prompt.'
                     : 'The app will automatically install and restart upon download completion.',
                 style: const TextStyle(color: Color(0xFF6B7A94), fontSize: 11),
               ),
@@ -206,7 +200,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
                   ),
                   icon: const Icon(Icons.system_update_alt_rounded, size: 18),
                   label: Text(
-                    Platform.isAndroid ? 'Download & Install APK' : 'Install & Restart Now',
+                    Platform.isAndroid ? 'Update Now (In-App)' : 'Install & Restart Now',
                     style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
                   ),
                 ),
