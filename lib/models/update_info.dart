@@ -1,4 +1,5 @@
 import 'dart:io';
+import '../config/flavor_config.dart';
 
 class UpdateInfo {
   final String version;
@@ -24,11 +25,22 @@ class UpdateInfo {
     // Find installer asset (.apk on Android, .exe or .zip on Windows)
     String url = '';
     if (Platform.isAndroid) {
+      final preferredAsset = FlavorConfig.isVpn ? 'cpray-vpn.apk' : 'cpray-gaming.apk';
+
       for (final asset in assets) {
         final name = (asset['name'] as String? ?? '').toLowerCase();
-        if (name.endsWith('.apk')) {
+        if (name == preferredAsset) {
           url = asset['browser_download_url'] as String? ?? '';
           break;
+        }
+      }
+      if (url.isEmpty) {
+        for (final asset in assets) {
+          final name = (asset['name'] as String? ?? '').toLowerCase();
+          if (name.endsWith('.apk')) {
+            url = asset['browser_download_url'] as String? ?? '';
+            break;
+          }
         }
       }
     } else {

@@ -47,6 +47,21 @@ android {
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
         multiDexEnabled true
+        resValue "string", "app_name", "CPRay Gaming"
+    }
+
+    flavorDimensions "default"
+    productFlavors {
+        gaming {
+            dimension "default"
+            applicationId "com.cpray.gaming"
+            resValue "string", "app_name", "CPRay Gaming"
+        }
+        vpn {
+            dimension "default"
+            applicationId "com.cpray.vpn"
+            resValue "string", "app_name", "CPRay VPN"
+        }
     }
 
     signingConfigs {

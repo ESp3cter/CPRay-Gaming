@@ -110,19 +110,25 @@ jobs:
       - name: Fetch Dependencies
         run: flutter pub get
 
-      - name: Build Android Release APK
-        run: flutter build apk --release
+      - name: Build Android Gaming Release APK
+        run: flutter build apk --flavor gaming --target lib/main_gaming.dart --release
 
-      - name: Prepare Android APK
+      - name: Build Android CPRay VPN Release APK
+        run: flutter build apk --flavor vpn --target lib/main_vpn.dart --release
+
+      - name: Prepare Android APKs
         run: |
           mkdir -p build_output
-          cp build/app/outputs/flutter-apk/app-release.apk build_output/CPRay-Gaming.apk
+          cp build/app/outputs/flutter-apk/app-gaming-release.apk build_output/CPRay-Gaming.apk
+          cp build/app/outputs/flutter-apk/app-vpn-release.apk build_output/CPRay-VPN.apk
 
-      - name: Upload Android APK Artifact
+      - name: Upload Android APKs Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: android-apk
-          path: build_output/CPRay-Gaming.apk
+          name: android-apks
+          path: |
+            build_output/CPRay-Gaming.apk
+            build_output/CPRay-VPN.apk
 
   publish-release:
     needs: [build-windows, build-android]
@@ -143,17 +149,17 @@ jobs:
           name: windows-portable
           path: release-files
 
-      - name: Download Android APK
+      - name: Download Android APKs
         uses: actions/download-artifact@v4
         with:
-          name: android-apk
+          name: android-apks
           path: release-files
 
       - name: Publish Unified GitHub Release
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          name: "CPRay Gaming ${{ github.ref_name }}"
+          name: "CPRay Suite ${{ github.ref_name }}"
           draft: false
           prerelease: false
           generate_release_notes: true
@@ -161,3 +167,4 @@ jobs:
             release-files/CPRay-Gaming-Setup.exe
             release-files/CPRay-Gaming-Windows-Portable.zip
             release-files/CPRay-Gaming.apk
+            release-files/CPRay-VPN.apk

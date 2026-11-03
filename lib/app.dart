@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'config/flavor_config.dart';
 import 'providers/server_provider.dart';
 import 'providers/vpn_provider.dart';
 import 'views/main_layout.dart';
+import 'views/vpn/vpn_main_layout.dart';
 
 class CPRayGamingApp extends StatelessWidget {
   const CPRayGamingApp({super.key});
@@ -15,7 +17,7 @@ class CPRayGamingApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ServerProvider()),
       ],
       child: MaterialApp(
-        title: 'CPRay Gaming',
+        title: FlavorConfig.appName,
         debugShowCheckedModeBanner: false,
         themeMode: ThemeMode.dark,
         darkTheme: ThemeData(
@@ -31,7 +33,7 @@ class CPRayGamingApp extends StatelessWidget {
           fontFamily: 'Segoe UI',
           useMaterial3: true,
         ),
-        home: const MainLayout(),
+        home: FlavorConfig.isVpn ? const VpnMainLayout() : const MainLayout(),
       ),
     );
   }
