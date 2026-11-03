@@ -1,5 +1,4 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.cpray.gaming">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <!-- Safe Network & VPN Permissions (Zero Sensitive Device Access) -->
     <uses-permission android:name="android.permission.INTERNET" />
@@ -19,7 +18,7 @@
         android:requestLegacyExternalStorage="false">
 
         <activity
-            android:name=".MainActivity"
+            android:name="com.cpray.gaming.MainActivity"
             android:exported="true"
             android:launchMode="singleTop"
             android:theme="@style/LaunchTheme"

@@ -48,6 +48,9 @@ android {
         versionName flutterVersionName
         multiDexEnabled true
         resValue "string", "app_name", "CPRay Gaming"
+        ndk {
+            abiFilters "armeabi-v7a", "arm64-v8a", "x86_64"
+        }
     }
 
     flavorDimensions "default"
@@ -70,6 +73,8 @@ android {
             storePassword 'cpraygaming2026'
             keyAlias 'cpray'
             keyPassword 'cpraygaming2026'
+            v1SigningEnabled true
+            v2SigningEnabled true
         }
     }
 
