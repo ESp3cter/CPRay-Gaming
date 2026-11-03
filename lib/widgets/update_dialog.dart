@@ -38,9 +38,13 @@ class _UpdateDialogState extends State<UpdateDialog> {
               _progress = progress;
               _received = received;
               _total = total;
-              _statusText = 'Downloading: ${(progress * 100).toStringAsFixed(0)}% '
-                  '(${(_received / (1024 * 1024)).toStringAsFixed(1)} MB / '
-                  '${(_total / (1024 * 1024)).toStringAsFixed(1)} MB)';
+              if (progress >= 1.0) {
+                _statusText = 'Applying update and restarting CPRay Gaming...';
+              } else {
+                _statusText = 'Downloading: ${(progress * 100).toStringAsFixed(0)}% '
+                    '(${(_received / (1024 * 1024)).toStringAsFixed(1)} MB / '
+                    '${(_total / (1024 * 1024)).toStringAsFixed(1)} MB)';
+              }
             });
           }
         },

@@ -68,18 +68,31 @@ class UpdaterService {
       // Ensure VPN tunnel is cleanly closed before replacing binaries
       await VpnService.stopVpn();
 
-      // Run Inno Setup installer silently and restart application
-      await Process.start(
-        installerFile.path,
-        [
-          '/VERYSILENT',
-          '/NORESTART',
-          '/SP-',
-          '/CLOSEAPPLICATIONS',
-          '/RESTARTAPPLICATIONS',
-        ],
-        mode: ProcessStartMode.detached,
-      );
+      if (Platform.isWindows) {
+        // Launch a resilient supervisor script that runs Inno Setup and guarantees application relaunch
+        final programFiles = Platform.environment['ProgramFiles'] ?? r'C:\Program Files';
+        final targetExe = p.join(programFiles, 'CPRay Gaming', 'cpray_gaming.exe');
+
+        final script =
+            'Start-Process -FilePath "${installerFile.path}" -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/SP-", "/CLOSEAPPLICATIONS", "/FORCECLOSEAPPLICATIONS" -Wait; '
+            'Start-Sleep -Seconds 1; '
+            'if (-not (Get-Process -Name "cpray_gaming" -ErrorAction SilentlyContinue)) { '
+            '  if (Test-Path "$targetExe") { Start-Process -FilePath "$targetExe" } '
+            '  else { Start-Process -FilePath "${Platform.resolvedExecutable}" } '
+            '}';
+
+        await Process.start(
+          'powershell.exe',
+          ['-NoProfile', '-WindowStyle', 'Hidden', '-Command', script],
+          mode: ProcessStartMode.detached,
+        );
+      } else {
+        await Process.start(
+          installerFile.path,
+          [],
+          mode: ProcessStartMode.detached,
+        );
+      }
 
       // Exit current running instance so installer can update files cleanly
       exit(0);

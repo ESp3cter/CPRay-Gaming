@@ -1,3 +1,5 @@
+import 'dart:io';
+
 class UpdateInfo {
   final String version;
   final String releaseName;
@@ -19,22 +21,32 @@ class UpdateInfo {
     final tagName = (json['tag_name'] as String? ?? 'v1.0.0').replaceAll('v', '');
     final assets = json['assets'] as List<dynamic>? ?? [];
     
-    // Find installer asset (.exe or .msix or zip)
+    // Find installer asset (.apk on Android, .exe or .zip on Windows)
     String url = '';
-    // Prioritize .exe installer over .zip archive
-    for (final asset in assets) {
-      final name = (asset['name'] as String? ?? '').toLowerCase();
-      if (name.endsWith('.exe')) {
-        url = asset['browser_download_url'] as String? ?? '';
-        break;
-      }
-    }
-    if (url.isEmpty) {
+    if (Platform.isAndroid) {
       for (final asset in assets) {
         final name = (asset['name'] as String? ?? '').toLowerCase();
-        if (name.endsWith('.zip')) {
+        if (name.endsWith('.apk')) {
           url = asset['browser_download_url'] as String? ?? '';
           break;
+        }
+      }
+    } else {
+      // Prioritize .exe installer over .zip archive
+      for (final asset in assets) {
+        final name = (asset['name'] as String? ?? '').toLowerCase();
+        if (name.endsWith('.exe')) {
+          url = asset['browser_download_url'] as String? ?? '';
+          break;
+        }
+      }
+      if (url.isEmpty) {
+        for (final asset in assets) {
+          final name = (asset['name'] as String? ?? '').toLowerCase();
+          if (name.endsWith('.zip')) {
+            url = asset['browser_download_url'] as String? ?? '';
+            break;
+          }
         }
       }
     }
