@@ -9,24 +9,160 @@ class ConfigGenerator {
     'digikala.com',
     'divar.ir',
     'snapp.ir',
+    'snapp.express',
+    'snapptrip.com',
+    'snappmarket.com',
+    'tapsi.ir',
+    'tapsi.cab',
     'torob.com',
+    'emalls.ir',
+    'basalam.com',
     'varzesh3.com',
     'aparat.com',
+    'filimo.com',
+    'namava.ir',
     'telewebion.com',
-    'shaparak.ir',
-    'tamin.ir',
-    'bale.ai',
     'rubika.ir',
+    'bale.ai',
     'eitaa.com',
+    'eitaa.ir',
     'splus.ir',
-    'arvancloud.ir',
+    'gap.im',
+    'igap.net',
     'cafebazaar.ir',
     'myket.ir',
+    'sibapp.com',
+    'sibche.com',
+    'iapps.ir',
+    'anardoni.com',
+    'arvancloud.ir',
+    'arvancloud.com',
+    'abrnoc.ir',
+    'derak.cloud',
+    'parspack.com',
+    'iranserver.com',
+    'shaparak.ir',
+    'shaparak.org',
+    'asanpardakht.ir',
+    'asanpardakht.net',
+    'asanpardakht.com',
+    'zarinpal.com',
+    'idpay.ir',
+    'pay.ir',
+    'samanepay.com',
+    'sadadpsp.ir',
+    'sepehrpay.com',
+    'pec.ir',
     'bmi.ir',
     'bankmellat.ir',
     'bki.ir',
     'rb24.ir',
     'tejaratbank.ir',
+    'bsi.ir',
+    'sb24.ir',
+    'bpi.ir',
+    'enbank.ir',
+    'refah-bank.ir',
+    'parsian-bank.ir',
+    'sinabank.ir',
+    'izbank.ir',
+    'postbank.ir',
+    'resalat-bank.ir',
+    'ba24.ir',
+    'tamin.ir',
+    'my.gov.ir',
+    'sanjesh.org',
+    'medu.ir',
+    'isna.ir',
+    'farsnews.ir',
+    'tasnimnews.com',
+    'yjc.ir',
+    'mehrnews.com',
+    'irna.ir',
+  ];
+
+  static const List<String> _iranianDomainKeywords = [
+    'shaparak',
+    'asanpardakht',
+    'samanepay',
+    'zarinpal',
+  ];
+
+  static const List<String> _iranianIpCidrs = [
+    '2.144.0.0/13',
+    '2.176.0.0/12',
+    '5.56.0.0/14',
+    '5.160.0.0/12',
+    '5.200.0.0/13',
+    '31.2.128.0/17',
+    '31.7.64.0/18',
+    '31.24.160.0/19',
+    '31.56.0.0/14',
+    '37.98.0.0/15',
+    '37.114.0.0/16',
+    '37.130.0.0/15',
+    '37.143.0.0/16',
+    '37.152.0.0/13',
+    '37.156.0.0/14',
+    '46.100.0.0/15',
+    '46.166.0.0/16',
+    '46.209.0.0/16',
+    '46.224.0.0/13',
+    '62.60.0.0/16',
+    '62.102.0.0/16',
+    '62.193.0.0/16',
+    '62.204.0.0/16',
+    '78.38.0.0/15',
+    '78.157.0.0/16',
+    '78.158.0.0/15',
+    '79.127.0.0/17',
+    '79.175.128.0/17',
+    '80.191.0.0/16',
+    '80.253.128.0/17',
+    '81.12.0.0/16',
+    '81.91.128.0/17',
+    '82.99.192.0/18',
+    '82.115.0.0/17',
+    '84.47.192.0/18',
+    '84.241.0.0/17',
+    '85.185.0.0/16',
+    '85.133.128.0/17',
+    '89.43.0.0/16',
+    '89.144.128.0/17',
+    '89.165.0.0/16',
+    '89.196.0.0/15',
+    '91.98.0.0/15',
+    '91.108.0.0/16',
+    '91.240.0.0/16',
+    '93.110.0.0/16',
+    '93.118.0.0/15',
+    '94.74.128.0/17',
+    '94.101.128.0/17',
+    '94.182.0.0/15',
+    '94.232.168.0/21',
+    '109.125.128.0/17',
+    '109.162.128.0/17',
+    '109.201.0.0/16',
+    '151.232.0.0/13',
+    '158.58.0.0/16',
+    '178.131.0.0/15',
+    '178.252.0.0/15',
+    '185.4.28.0/22',
+    '185.8.172.0/22',
+    '185.88.152.0/22',
+    '185.143.232.0/22',
+    '188.121.96.0/19',
+    '188.136.128.0/17',
+    '188.158.0.0/15',
+    '188.210.0.0/15',
+    '188.253.0.0/16',
+    '194.225.0.0/16',
+    '195.146.32.0/19',
+    '212.16.64.0/19',
+    '212.33.192.0/19',
+    '212.80.0.0/19',
+    '217.66.192.0/18',
+    '217.218.0.0/15',
   ];
 
   static final Map<String, String> antiSanctionDnsMap = {
@@ -118,11 +254,13 @@ class ConfigGenerator {
         ),
         _buildDnsServer(
           tag: 'direct-dns',
-          rawAddress: 'local',
+          rawAddress: '178.22.122.100:53', // Shecan clean domestic DNS
+          detour: 'direct',
         ),
         _buildDnsServer(
           tag: 'direct-dns-backup',
-          rawAddress: '178.22.122.100:53', // Shecan clean domestic DNS
+          rawAddress: '10.202.10.10:53', // Radar clean domestic DNS
+          detour: 'direct',
         ),
         _buildDnsServer(
           tag: 'local-dns',
@@ -134,7 +272,11 @@ class ConfigGenerator {
           {
             'domain_suffix': _iranianDomainSuffixes,
             'server': 'direct-dns',
-          }
+          },
+          {
+            'domain_keyword': _iranianDomainKeywords,
+            'server': 'direct-dns',
+          },
         ],
       ],
       'final': 'remote-dns',
@@ -168,17 +310,27 @@ class ConfigGenerator {
         'domain_suffix': _iranianDomainSuffixes,
         'outbound': 'direct',
       });
+      routeRules.add({
+        'domain_keyword': _iranianDomainKeywords,
+        'outbound': 'direct',
+      });
+      routeRules.add({
+        'ip_cidr': _iranianIpCidrs,
+        'outbound': 'direct',
+      });
     }
 
     // Split Tunneling Rules
     if (settings.splitTunnelMode == SplitTunnelMode.inclusive && settings.splitTunnelApps.isNotEmpty) {
+      final normalized = _normalizeProcessNames(settings.splitTunnelApps);
       routeRules.add({
-        'process_name': settings.splitTunnelApps,
+        'process_name': normalized,
         'outbound': 'proxy',
       });
     } else if (settings.splitTunnelMode == SplitTunnelMode.exclusive && settings.splitTunnelApps.isNotEmpty) {
+      final normalized = _normalizeProcessNames(settings.splitTunnelApps);
       routeRules.add({
-        'process_name': settings.splitTunnelApps,
+        'process_name': normalized,
         'outbound': 'direct',
       });
     }
@@ -519,6 +671,21 @@ class ConfigGenerator {
       'server_port': port,
       if (detour != null) 'detour': detour,
     };
+  }
+
+  static List<String> _normalizeProcessNames(List<String> raw) {
+    final set = <String>{};
+    for (final item in raw) {
+      final trimmed = item.trim();
+      if (trimmed.isEmpty) continue;
+      set.add(trimmed);
+      if (trimmed.toLowerCase().endsWith('.exe')) {
+        set.add(trimmed.substring(0, trimmed.length - 4));
+      } else {
+        set.add('$trimmed.exe');
+      }
+    }
+    return set.toList();
   }
 
   static String generateJsonString({

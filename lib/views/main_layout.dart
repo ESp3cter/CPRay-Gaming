@@ -6,8 +6,7 @@ import '../models/app_settings.dart';
 import '../providers/vpn_provider.dart';
 import '../services/localization_service.dart';
 import '../services/updater_service.dart';
-import '../services/vpn_service.dart';
-import '../widgets/update_dialog.dart';
+import '../widgets/update_ready_dialog.dart';
 import 'dashboard_view.dart';
 import 'game_optimizer_view.dart';
 import 'game_ping_tester_view.dart';
@@ -32,19 +31,25 @@ class _MainLayoutState extends State<MainLayout> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _checkForceUpdate();
+      _startBackgroundUpdater();
     });
   }
 
-  Future<void> _checkForceUpdate() async {
-    final update = await UpdaterService.checkForUpdates();
-    if (update != null && update.hasUpdate && mounted) {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => UpdateDialog(updateInfo: update),
-      );
-    }
+  void _startBackgroundUpdater() {
+    UpdaterService.checkAndDownloadInBackground(
+      onReadyToInstall: (update, file) {
+        if (mounted) {
+          showDialog(
+            context: context,
+            barrierDismissible: true,
+            builder: (context) => UpdateReadyDialog(
+              updateInfo: update,
+              installerFile: file,
+            ),
+          );
+        }
+      },
+    );
   }
 
   Future<void> _toggleMiniMode() async {

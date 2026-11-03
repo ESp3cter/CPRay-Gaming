@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import '../../models/server_config.dart';
 import '../../providers/server_provider.dart';
 import '../../providers/vpn_provider.dart';
 import '../../services/localization_service.dart';
 import '../../services/updater_service.dart';
 import '../../services/vpn_service.dart';
-import '../../widgets/update_dialog.dart';
+import '../../widgets/update_ready_dialog.dart';
 import 'vpn_server_sheet.dart';
 import 'vpn_settings_view.dart';
 
@@ -35,7 +34,7 @@ class _VpnMainLayoutState extends State<VpnMainLayout> with SingleTickerProvider
     );
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _checkForceUpdate();
+      _startBackgroundUpdater();
     });
   }
 
@@ -45,15 +44,21 @@ class _VpnMainLayoutState extends State<VpnMainLayout> with SingleTickerProvider
     super.dispose();
   }
 
-  Future<void> _checkForceUpdate() async {
-    final update = await UpdaterService.checkForUpdates();
-    if (update != null && update.hasUpdate && mounted) {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => UpdateDialog(updateInfo: update),
-      );
-    }
+  void _startBackgroundUpdater() {
+    UpdaterService.checkAndDownloadInBackground(
+      onReadyToInstall: (update, file) {
+        if (mounted) {
+          showDialog(
+            context: context,
+            barrierDismissible: true,
+            builder: (context) => UpdateReadyDialog(
+              updateInfo: update,
+              installerFile: file,
+            ),
+          );
+        }
+      },
+    );
   }
 
   void _showAddSubscriptionDialog(BuildContext context) {
@@ -63,65 +68,68 @@ class _VpnMainLayoutState extends State<VpnMainLayout> with SingleTickerProvider
 
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF141824),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
-          side: const BorderSide(color: Color(0xFF00D4FF), width: 1.2),
-        ),
-        title: const Text(
-          'Add Subscription URL',
-          style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w800),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Paste your Pasarguard, Marzban, or V2Ray link:',
-              style: TextStyle(color: Color(0xFF8C9BAE), fontSize: 13),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: controller,
-              style: const TextStyle(color: Colors.white, fontSize: 13),
-              decoration: InputDecoration(
-                hintText: 'https://panel.example.com/sub/...',
-                hintStyle: const TextStyle(color: Color(0xFF5A6678)),
-                filled: true,
-                fillColor: const Color(0xFF0C0E16),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFF22283D)),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFF00D4FF)),
+      builder: (ctx) => Directionality(
+        textDirection: LocalizationService.direction,
+        child: AlertDialog(
+          backgroundColor: const Color(0xFF141824),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+            side: const BorderSide(color: Color(0xFF00D4FF), width: 1.2),
+          ),
+          title: Text(
+            LocalizationService.tr('add_subscription_title'),
+            style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w800),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                LocalizationService.tr('add_subscription_desc'),
+                style: const TextStyle(color: Color(0xFF8C9BAE), fontSize: 13),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: controller,
+                style: const TextStyle(color: Colors.white, fontSize: 13),
+                decoration: InputDecoration(
+                  hintText: 'https://panel.example.com/sub/...',
+                  hintStyle: const TextStyle(color: Color(0xFF5A6678)),
+                  filled: true,
+                  fillColor: const Color(0xFF0C0E16),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Color(0xFF22283D)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Color(0xFF00D4FF)),
+                  ),
                 ),
               ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: Text(LocalizationService.tr('cancel'), style: const TextStyle(color: Color(0xFF7E8B9E))),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final url = controller.text.trim();
+                if (url.isNotEmpty) {
+                  context.read<ServerProvider>().updateSubscription(url);
+                }
+                Navigator.of(ctx).pop();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF00D4FF),
+                foregroundColor: const Color(0xFF090A10),
+              ),
+              child: Text(LocalizationService.tr('save_and_fetch'), style: const TextStyle(fontWeight: FontWeight.w800)),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel', style: TextStyle(color: Color(0xFF7E8B9E))),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              final url = controller.text.trim();
-              if (url.isNotEmpty) {
-                context.read<ServerProvider>().updateSubscription(url);
-              }
-              Navigator.of(ctx).pop();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF00D4FF),
-              foregroundColor: const Color(0xFF090A10),
-            ),
-            child: const Text('Save & Fetch', style: TextStyle(fontWeight: FontWeight.w800)),
-          ),
-        ],
       ),
     );
   }
@@ -132,7 +140,7 @@ class _VpnMainLayoutState extends State<VpnMainLayout> with SingleTickerProvider
     if (text.isEmpty) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Clipboard is empty!')),
+          SnackBar(content: Text(LocalizationService.tr('clipboard_empty'))),
         );
       }
       return;
@@ -143,11 +151,11 @@ class _VpnMainLayoutState extends State<VpnMainLayout> with SingleTickerProvider
       if (context.mounted) {
         if (ok) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Imported node successfully!')),
+            SnackBar(content: Text(LocalizationService.tr('imported_successfully'))),
           );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Unrecognized config format in clipboard.')),
+            SnackBar(content: Text(LocalizationService.tr('unrecognized_config'))),
           );
         }
       }
@@ -204,7 +212,7 @@ class _VpnMainLayoutState extends State<VpnMainLayout> with SingleTickerProvider
                         ),
                         child: const Icon(Icons.tune_rounded, color: Color(0xFF8C9BAE), size: 20),
                       ),
-                      tooltip: 'Settings',
+                      tooltip: LocalizationService.tr('settings'),
                       onPressed: () {
                         Navigator.of(context).push(
                           MaterialPageRoute(builder: (context) => const VpnSettingsView()),
@@ -229,9 +237,9 @@ class _VpnMainLayoutState extends State<VpnMainLayout> with SingleTickerProvider
                           child: const Icon(Icons.shield_rounded, color: Color(0xFF090C14), size: 16),
                         ),
                         const SizedBox(width: 8),
-                        const Text(
-                          'CPRay VPN',
-                          style: TextStyle(
+                        Text(
+                          LocalizationService.tr('vpn_title'),
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 16,
                             fontWeight: FontWeight.w900,
@@ -271,33 +279,33 @@ class _VpnMainLayoutState extends State<VpnMainLayout> with SingleTickerProvider
                         }
                       },
                       itemBuilder: (context) => [
-                        const PopupMenuItem(
+                        PopupMenuItem(
                           value: 'clipboard',
                           child: Row(
                             children: [
-                              Icon(Icons.content_paste_rounded, color: Color(0xFF00D4FF), size: 18),
-                              SizedBox(width: 10),
-                              Text('Import from Clipboard', style: TextStyle(color: Colors.white, fontSize: 13)),
+                              const Icon(Icons.content_paste_rounded, color: Color(0xFF00D4FF), size: 18),
+                              const SizedBox(width: 10),
+                              Text(LocalizationService.tr('import_from_clipboard'), style: const TextStyle(color: Colors.white, fontSize: 13)),
                             ],
                           ),
                         ),
-                        const PopupMenuItem(
+                        PopupMenuItem(
                           value: 'sub_refresh',
                           child: Row(
                             children: [
-                              Icon(Icons.sync_rounded, color: Color(0xFF00FF88), size: 18),
-                              SizedBox(width: 10),
-                              Text('Update Subscription', style: TextStyle(color: Colors.white, fontSize: 13)),
+                              const Icon(Icons.sync_rounded, color: Color(0xFF00FF88), size: 18),
+                              const SizedBox(width: 10),
+                              Text(LocalizationService.tr('update_subscription'), style: const TextStyle(color: Colors.white, fontSize: 13)),
                             ],
                           ),
                         ),
-                        const PopupMenuItem(
+                        PopupMenuItem(
                           value: 'sub_add',
                           child: Row(
                             children: [
-                              Icon(Icons.add_link_rounded, color: Color(0xFFFFB300), size: 18),
-                              SizedBox(width: 10),
-                              Text('Edit Subscription URL', style: TextStyle(color: Colors.white, fontSize: 13)),
+                              const Icon(Icons.add_link_rounded, color: Color(0xFFFFB300), size: 18),
+                              const SizedBox(width: 10),
+                              Text(LocalizationService.tr('edit_subscription_url'), style: const TextStyle(color: Colors.white, fontSize: 13)),
                             ],
                           ),
                         ),
@@ -403,10 +411,10 @@ class _VpnMainLayoutState extends State<VpnMainLayout> with SingleTickerProvider
                       // Status Headline
                       Text(
                         isConnected
-                            ? 'CONNECTED'
+                            ? LocalizationService.tr('warp_connected')
                             : isConnecting
-                                ? 'CONNECTING...'
-                                : 'DISCONNECTED',
+                                ? LocalizationService.tr('warp_connecting')
+                                : LocalizationService.tr('warp_disconnected'),
                         style: TextStyle(
                           color: isConnected
                               ? const Color(0xFF00FF88)
@@ -421,10 +429,11 @@ class _VpnMainLayoutState extends State<VpnMainLayout> with SingleTickerProvider
                       const SizedBox(height: 6),
                       Text(
                         isConnected
-                            ? 'Your traffic is encrypted, secure & accelerated'
+                            ? LocalizationService.tr('warp_connected_desc')
                             : isConnecting
-                                ? 'Establishing secure Sing-box tunnel...'
-                                : 'Your internet is direct & unprotected',
+                                ? LocalizationService.tr('warp_connecting_desc')
+                                : LocalizationService.tr('warp_disconnected_desc'),
+                        textAlign: TextAlign.center,
                         style: const TextStyle(
                           color: Color(0xFF6B7A94),
                           fontSize: 13,
@@ -442,7 +451,7 @@ class _VpnMainLayoutState extends State<VpnMainLayout> with SingleTickerProvider
                               icon: Icons.speed_rounded,
                               label: (selectedServer?.ping != null && selectedServer!.ping! > 0)
                                   ? '${selectedServer.ping} ms'
-                                  : 'Active',
+                                  : LocalizationService.tr('active'),
                               color: const Color(0xFF00FF88),
                             ),
                             const SizedBox(width: 8),
@@ -505,7 +514,7 @@ class _VpnMainLayoutState extends State<VpnMainLayout> with SingleTickerProvider
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                selectedServer != null ? selectedServer.name : 'Select a Server Node',
+                                selectedServer != null ? selectedServer.name : LocalizationService.tr('select_server_node'),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
@@ -517,8 +526,8 @@ class _VpnMainLayoutState extends State<VpnMainLayout> with SingleTickerProvider
                               const SizedBox(height: 2),
                               Text(
                                 selectedServer != null
-                                    ? '${selectedServer.protocol.toUpperCase()} • Tap to change location'
-                                    : 'Tap to choose or import servers',
+                                    ? '${selectedServer.protocol.toUpperCase()} • ${LocalizationService.tr('tap_to_change')}'
+                                    : LocalizationService.tr('tap_to_choose'),
                                 style: const TextStyle(color: Color(0xFF6B7A94), fontSize: 11),
                               ),
                             ],
@@ -538,7 +547,7 @@ class _VpnMainLayoutState extends State<VpnMainLayout> with SingleTickerProvider
                               Text(
                                 (selectedServer?.ping != null && selectedServer!.ping! > 0)
                                     ? '${selectedServer.ping} ms'
-                                    : 'Switch',
+                                    : LocalizationService.tr('switch_location'),
                                 style: const TextStyle(color: Color(0xFF00D4FF), fontSize: 11, fontWeight: FontWeight.w800),
                               ),
                               const SizedBox(width: 4),

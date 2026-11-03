@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/app_settings.dart';
 import '../models/server_config.dart';
 import '../services/audio_feedback_service.dart';
@@ -100,6 +101,8 @@ class VpnProvider extends ChangeNotifier {
   Future<void> setLanguage(String lang) async {
     LocalizationService.currentLanguage = lang;
     _settings = _settings.copyWith(language: lang);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('user_explicit_language', true);
     await StorageService.saveSettings(_settings);
     notifyListeners();
   }

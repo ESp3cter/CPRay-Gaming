@@ -4,7 +4,7 @@ import '../models/app_settings.dart';
 import '../providers/vpn_provider.dart';
 import '../services/localization_service.dart';
 import '../services/updater_service.dart';
-import '../widgets/update_dialog.dart';
+import '../widgets/update_ready_dialog.dart';
 
 class SettingsView extends StatefulWidget {
   const SettingsView({super.key});
@@ -45,20 +45,44 @@ class _SettingsViewState extends State<SettingsView> {
   }
 
   Future<void> _manualCheckUpdate() async {
+    if (UpdaterService.downloadedFile != null && UpdaterService.readyUpdate != null) {
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => UpdateReadyDialog(
+            updateInfo: UpdaterService.readyUpdate!,
+            installerFile: UpdaterService.downloadedFile!,
+          ),
+        );
+      }
+      return;
+    }
+
     setState(() => _isCheckingUpdate = true);
     final update = await UpdaterService.checkForUpdates();
     setState(() => _isCheckingUpdate = false);
 
     if (mounted) {
       if (update != null && update.hasUpdate) {
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) => UpdateDialog(updateInfo: update),
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${LocalizationService.tr('version')} ${update.version} - ${LocalizationService.tr('downloading_bg')}'),
+            backgroundColor: const Color(0xFF141824),
+          ),
+        );
+        UpdaterService.checkAndDownloadInBackground(
+          onReadyToInstall: (upd, file) {
+            if (mounted) {
+              showDialog(
+                context: context,
+                builder: (context) => UpdateReadyDialog(updateInfo: upd, installerFile: file),
+              );
+            }
+          },
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('You are using the latest version of CPRay Gaming!')),
+          SnackBar(content: Text(LocalizationService.tr('latest_version'))),
         );
       }
     }
@@ -281,7 +305,7 @@ class _SettingsViewState extends State<SettingsView> {
                       ),
                       SizedBox(height: 2),
                       Text(
-                        'Version 0.3.10 (Sing-box Core 1.14+)',
+                        'Version 0.3.11 (Sing-box Core 1.14+)',
                         style: TextStyle(color: Color(0xFF6B7A94), fontSize: 12),
                       ),
                     ],

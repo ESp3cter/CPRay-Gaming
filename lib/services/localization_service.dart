@@ -1,7 +1,15 @@
 import 'package:flutter/material.dart';
 
 class LocalizationService {
-  static String currentLanguage = 'en'; // 'en' or 'fa'
+  static String get deviceLanguage {
+    try {
+      final code = WidgetsBinding.instance.platformDispatcher.locale.languageCode.toLowerCase();
+      if (code == 'fa' || code == 'pes' || code == 'per' || code == 'prs') return 'fa';
+    } catch (_) {}
+    return 'en';
+  }
+
+  static String currentLanguage = deviceLanguage; // Auto-detect phone language by default
 
   static bool get isPersian => currentLanguage == 'fa';
   static TextDirection get direction => isPersian ? TextDirection.rtl : TextDirection.ltr;
@@ -10,6 +18,7 @@ class LocalizationService {
     'en': {
       'app_title': 'CPRay Gaming',
       'app_subtitle': 'GAMING SUITE',
+      'vpn_title': 'CPRay VPN',
       'dashboard': 'Dashboard',
       'game_optimizer': 'Game Optimizer (Per-App)',
       'game_ping_tester': 'Game Ping Tester (100+ Games)',
@@ -43,14 +52,69 @@ class LocalizationService {
       'dota2_profile': 'Dota 2 Europe Low Jitter',
       'discord_profile': 'Discord Voice Priority & Streaming',
       'warzone_profile': 'Warzone & Apex Legends Smooth Routing',
+
+      // CPRay VPN & Cloudflare WARP UI Strings
+      'warp_connected': 'CONNECTED',
+      'warp_connecting': 'CONNECTING...',
+      'warp_disconnected': 'DISCONNECTED',
+      'warp_connected_desc': 'Your traffic is encrypted, secure & accelerated',
+      'warp_connecting_desc': 'Establishing secure Sing-box tunnel...',
+      'warp_disconnected_desc': 'Your internet is direct & unprotected',
+      'select_server_node': 'Select a Server Node',
+      'tap_to_change': 'Tap to change location',
+      'import_from_clipboard': 'Import from Clipboard',
+      'update_subscription': 'Update Subscription',
+      'edit_subscription_url': 'Edit Subscription URL',
+      'clipboard_empty': 'Clipboard is empty!',
+      'imported_successfully': 'Imported node successfully!',
+      'unrecognized_config': 'Unrecognized config format in clipboard.',
+      'add_subscription_title': 'Add Subscription URL',
+      'add_subscription_desc': 'Paste your Pasarguard, Marzban, or V2Ray link:',
+      'save_and_fetch': 'Save & Fetch',
+      'cancel': 'Cancel',
+
+      // Background Updater Strings
+      'update_ready_title': 'Update Ready to Install',
+      'update_ready_desc': 'A new version has been downloaded in the background and is ready to install.',
+      'install_now': 'Install Now',
+      'later': 'Later',
+      'checking_updates': 'Checking for updates...',
+      'downloading_bg': 'Downloading update in background...',
+      'latest_version': 'You are on the latest version.',
+      'active': 'Active',
+
+      // Settings & Server Sheet Strings
+      'select_location_node': 'Select Location & Node',
+      'locations_available': 'locations available',
+      'test_ping': 'Test Ping',
+      'search_locations': 'Search locations & protocols...',
+      'no_servers_found': 'No server nodes found.',
+      'routing_privacy': 'ROUTING & PRIVACY',
+      'domestic_bypass_title': 'Domestic Traffic Bypass',
+      'domestic_bypass_desc': 'Direct unthrottled access to local banking & .ir websites',
+      'anti_sanction_title': 'Anti-Sanction DNS Mode',
+      'anti_sanction_desc': 'Bypass game & dev developer sanctions with low latency DNS',
+      'select_resolver': 'Select Resolver',
+      'pref_language': 'PREFERENCES & LANGUAGE',
+      'app_language': 'App Language',
+      'auto_connect_launch': 'Auto-Connect on Launch',
+      'auto_connect_desc': 'Automatically connect to the fastest node when opened',
+      'app_updates': 'APPLICATION & UPDATES',
+      'version': 'Version',
+      'update': 'Update',
+      'split_tunneling_title': 'Split Tunneling (App Routing)',
+      'split_tunneling_desc': 'Choose which apps use the VPN and which bypass it',
+      'switch_location': 'Switch',
+      'tap_to_choose': 'Tap to choose or import servers',
     },
     'fa': {
       'app_title': 'سی پی ری گیمینگ',
       'app_subtitle': 'سوئیت گیمینگ',
+      'vpn_title': 'سی پی ری وی‌پی‌ان',
       'dashboard': 'داشبورد',
       'game_optimizer': 'شتاب‌دهنده بازی‌ها (انتخابی)',
       'game_ping_tester': 'تست پینگ ۱۰۰ بازی',
-      'servers': 'سرورها و نودهای گیمینگ',
+      'servers': 'سرورها و نودها',
       'split_tunneling': 'اسپلیت تانلینگ',
       'settings': 'تنظیمات و مسیریابی',
       'engine_logs': 'لاگ‌های هسته',
@@ -80,6 +144,60 @@ class LocalizationService {
       'dota2_profile': 'پروفایل دوتا ۲ اروپا (کمترین جیتر)',
       'discord_profile': 'پروفایل دیسکورد و استریمینگ',
       'warzone_profile': 'پروفایل وارزون و اپکس لجندز',
+
+      // CPRay VPN & Cloudflare WARP UI Strings
+      'warp_connected': 'متصل شد',
+      'warp_connecting': 'در حال اتصال...',
+      'warp_disconnected': 'قطع است',
+      'warp_connected_desc': 'اینترنت شما رمزگذاری‌شده و کاملاً ایمن است',
+      'warp_connecting_desc': 'در حال ایجاد تانل پرسرعت و امن...',
+      'warp_disconnected_desc': 'اینترنت شما مستقیم و بدون محافظت است',
+      'select_server_node': 'انتخاب سرور و نود',
+      'tap_to_change': 'برای تغییر موقعیت سرور ضربه بزنید',
+      'import_from_clipboard': 'ورود کانفیگ از کلیپ‌بورد',
+      'update_subscription': 'بروزرسانی لینک سابسکریپشن',
+      'edit_subscription_url': 'ویرایش لینک سابسکریپشن',
+      'clipboard_empty': 'کلیپ‌بورد خالی است!',
+      'imported_successfully': 'کانفیگ با موفقیت اضافه شد!',
+      'unrecognized_config': 'فرمت کانفیگ در کلیپ‌بورد ناشناخته است.',
+      'add_subscription_title': 'افزودن لینک سابسکریپشن',
+      'add_subscription_desc': 'لینک پنل مرزبان، پاسارگاد یا V2Ray خود را وارد کنید:',
+      'save_and_fetch': 'ذخیره و دریافت سرورها',
+      'cancel': 'انصراف',
+
+      // Background Updater Strings
+      'update_ready_title': 'نسخه جدید آماده نصب است',
+      'update_ready_desc': 'نسخه جدید با موفقیت در پس‌زمینه دانلود شد و آماده نصب است.',
+      'install_now': 'نصب نسخه جدید',
+      'later': 'بعداً',
+      'checking_updates': 'در حال بررسی بروزرسانی...',
+      'downloading_bg': 'در حال دانلود در پس‌زمینه...',
+      'latest_version': 'شما از آخرین نسخه استفاده می‌کنید.',
+      'active': 'فعال',
+
+      // Settings & Server Sheet Strings
+      'select_location_node': 'انتخاب موقعیت و نود',
+      'locations_available': 'موقعیت موجود',
+      'test_ping': 'تست پینگ',
+      'search_locations': 'جستجوی نودها و پروتکل...',
+      'no_servers_found': 'هیچ سروری یافت نشد.',
+      'routing_privacy': 'مسیریابی و حریم خصوصی',
+      'domestic_bypass_title': 'دور زدن ترافیک داخلی',
+      'domestic_bypass_desc': 'دسترسی مستقیم و پرسرعت به بانک‌ها و سایت‌های ایرانی',
+      'anti_sanction_title': 'حالت ضد تحریم (DNS)',
+      'anti_sanction_desc': 'دور زدن تحریم‌های بازی و برنامه‌نویسی با کمترین تاخیر',
+      'select_resolver': 'انتخاب سرور رفع تحریم',
+      'pref_language': 'تنظیمات و زبان',
+      'app_language': 'زبان برنامه',
+      'auto_connect_launch': 'اتصال خودکار هنگام شروع',
+      'auto_connect_desc': 'اتصال خودکار به سریع‌ترین نود به محض باز شدن برنامه',
+      'app_updates': 'برنامه و بروزرسانی',
+      'version': 'نسخه',
+      'update': 'بروزرسانی',
+      'split_tunneling_title': 'اسپلیت تانلینگ (مسیریابی برنامه‌ها)',
+      'split_tunneling_desc': 'انتخاب برنامه‌هایی که از تانل رد شوند یا دور بزنند',
+      'switch_location': 'تغییر',
+      'tap_to_choose': 'برای انتخاب یا افزودن سرور ضربه بزنید',
     },
   };
 

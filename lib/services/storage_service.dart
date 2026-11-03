@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/app_settings.dart';
 import '../models/server_config.dart';
+import 'localization_service.dart';
 
 class StorageService {
   static const String _keySettings = 'cpray_settings';
@@ -11,12 +12,19 @@ class StorageService {
   static Future<AppSettings> loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
     final data = prefs.getString(_keySettings);
+    final hasExplicitLang = prefs.getBool('user_explicit_language') ?? false;
+    final systemLang = LocalizationService.deviceLanguage;
+
     if (data != null) {
       try {
-        return AppSettings.fromJson(jsonDecode(data));
+        final settings = AppSettings.fromJson(jsonDecode(data));
+        if (!hasExplicitLang) {
+          return settings.copyWith(language: systemLang);
+        }
+        return settings;
       } catch (_) {}
     }
-    return AppSettings();
+    return AppSettings(language: systemLang);
   }
 
   static Future<void> saveSettings(AppSettings settings) async {

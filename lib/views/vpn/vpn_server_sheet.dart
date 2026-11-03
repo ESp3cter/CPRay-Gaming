@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import '../../models/server_config.dart';
 import '../../providers/server_provider.dart';
 import '../../providers/vpn_provider.dart';
 import '../../services/localization_service.dart';
@@ -38,65 +37,68 @@ class _VpnServerSheetState extends State<VpnServerSheet> {
 
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF141824),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
-          side: const BorderSide(color: Color(0xFF00D4FF), width: 1.2),
-        ),
-        title: const Text(
-          'Import Subscription Link',
-          style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w800),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Paste your panel subscription URL:',
-              style: TextStyle(color: Color(0xFF8C9BAE), fontSize: 13),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _subUrlController,
-              style: const TextStyle(color: Colors.white, fontSize: 13),
-              decoration: InputDecoration(
-                hintText: 'https://panel.example.com/sub/...',
-                hintStyle: const TextStyle(color: Color(0xFF5A6678)),
-                filled: true,
-                fillColor: const Color(0xFF0C0E16),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFF22283D)),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFF00D4FF)),
+      builder: (ctx) => Directionality(
+        textDirection: LocalizationService.direction,
+        child: AlertDialog(
+          backgroundColor: const Color(0xFF141824),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+            side: const BorderSide(color: Color(0xFF00D4FF), width: 1.2),
+          ),
+          title: Text(
+            LocalizationService.tr('add_subscription_title'),
+            style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w800),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                LocalizationService.tr('add_subscription_desc'),
+                style: const TextStyle(color: Color(0xFF8C9BAE), fontSize: 13),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _subUrlController,
+                style: const TextStyle(color: Colors.white, fontSize: 13),
+                decoration: InputDecoration(
+                  hintText: 'https://panel.example.com/sub/...',
+                  hintStyle: const TextStyle(color: Color(0xFF5A6678)),
+                  filled: true,
+                  fillColor: const Color(0xFF0C0E16),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Color(0xFF22283D)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Color(0xFF00D4FF)),
+                  ),
                 ),
               ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: Text(LocalizationService.tr('cancel'), style: const TextStyle(color: Color(0xFF7E8B9E))),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final url = _subUrlController.text.trim();
+                if (url.isNotEmpty) {
+                  serverProvider.updateSubscription(url);
+                }
+                Navigator.of(ctx).pop();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF00D4FF),
+                foregroundColor: const Color(0xFF090A10),
+              ),
+              child: Text(LocalizationService.tr('save_and_fetch'), style: const TextStyle(fontWeight: FontWeight.w800)),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel', style: TextStyle(color: Color(0xFF7E8B9E))),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              final url = _subUrlController.text.trim();
-              if (url.isNotEmpty) {
-                serverProvider.updateSubscription(url);
-              }
-              Navigator.of(ctx).pop();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF00D4FF),
-              foregroundColor: const Color(0xFF090A10),
-            ),
-            child: const Text('Save & Fetch', style: TextStyle(fontWeight: FontWeight.w800)),
-          ),
-        ],
       ),
     );
   }
@@ -107,7 +109,7 @@ class _VpnServerSheetState extends State<VpnServerSheet> {
     if (text.isEmpty) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Clipboard is empty!')),
+          SnackBar(content: Text(LocalizationService.tr('clipboard_empty'))),
         );
       }
       return;
@@ -118,11 +120,11 @@ class _VpnServerSheetState extends State<VpnServerSheet> {
       if (context.mounted) {
         if (ok) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Imported server node from clipboard!')),
+            SnackBar(content: Text(LocalizationService.tr('imported_successfully'))),
           );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Unrecognized config format in clipboard.')),
+            SnackBar(content: Text(LocalizationService.tr('unrecognized_config'))),
           );
         }
       }
@@ -143,122 +145,124 @@ class _VpnServerSheetState extends State<VpnServerSheet> {
           s.protocol.toLowerCase().contains(q);
     }).toList();
 
-    return Container(
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.sizeOf(context).height * 0.82,
-      ),
-      decoration: const BoxDecoration(
-        color: Color(0xFF0E121D),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        border: Border(
-          top: BorderSide(color: Color(0xFF1E2638), width: 1.5),
+    return Directionality(
+      textDirection: LocalizationService.direction,
+      child: Container(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.sizeOf(context).height * 0.82,
         ),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Drag Handle
-          const SizedBox(height: 12),
-          Container(
-            width: 44,
-            height: 4.5,
-            decoration: BoxDecoration(
-              color: const Color(0xFF28324A),
-              borderRadius: BorderRadius.circular(4),
-            ),
+        decoration: const BoxDecoration(
+          color: Color(0xFF0E121D),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          border: Border(
+            top: BorderSide(color: Color(0xFF1E2638), width: 1.5),
           ),
-          const SizedBox(height: 14),
-
-          // Header
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Select Location & Node',
-                      style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800),
-                    ),
-                    Text(
-                      '${serverProvider.servers.length} locations available',
-                      style: const TextStyle(color: Color(0xFF6B7A94), fontSize: 12),
-                    ),
-                  ],
-                ),
-                ElevatedButton.icon(
-                  onPressed: serverProvider.isLoading ? null : () => serverProvider.testAllPings(),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF181F30),
-                    foregroundColor: const Color(0xFF00FF88),
-                    side: const BorderSide(color: Color(0xFF00FF88), width: 1.0),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
-                  icon: serverProvider.isLoading
-                      ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF00FF88)))
-                      : const Icon(Icons.bolt_rounded, size: 16),
-                  label: const Text('Test Ping', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 11)),
-                ),
-              ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Drag Handle
+            const SizedBox(height: 12),
+            Container(
+              width: 44,
+              height: 4.5,
+              decoration: BoxDecoration(
+                color: const Color(0xFF28324A),
+                borderRadius: BorderRadius.circular(4),
+              ),
             ),
-          ),
+            const SizedBox(height: 14),
 
-          const SizedBox(height: 14),
-
-          // Search & Quick Import Bar
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    onChanged: (val) => setState(() => _search = val),
-                    style: const TextStyle(color: Colors.white, fontSize: 13),
-                    decoration: InputDecoration(
-                      hintText: 'Search locations & protocols...',
-                      hintStyle: const TextStyle(color: Color(0xFF5A6678), fontSize: 12),
-                      prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF00D4FF), size: 18),
-                      filled: true,
-                      fillColor: const Color(0xFF131826),
-                      contentPadding: const EdgeInsets.symmetric(vertical: 10),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFF1E2638)),
+            // Header
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        LocalizationService.tr('select_location_node'),
+                        style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800),
                       ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFF00D4FF)),
+                      Text(
+                        '${serverProvider.servers.length} ${LocalizationService.tr('locations_available')}',
+                        style: const TextStyle(color: Color(0xFF6B7A94), fontSize: 12),
+                      ),
+                    ],
+                  ),
+                  ElevatedButton.icon(
+                    onPressed: serverProvider.isLoading ? null : () => serverProvider.testAllPings(),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF181F30),
+                      foregroundColor: const Color(0xFF00FF88),
+                      side: const BorderSide(color: Color(0xFF00FF88), width: 1.0),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    icon: serverProvider.isLoading
+                        ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF00FF88)))
+                        : const Icon(Icons.bolt_rounded, size: 16),
+                    label: Text(LocalizationService.tr('test_ping'), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 11)),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 14),
+
+            // Search & Quick Import Bar
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      onChanged: (val) => setState(() => _search = val),
+                      style: const TextStyle(color: Colors.white, fontSize: 13),
+                      decoration: InputDecoration(
+                        hintText: LocalizationService.tr('search_locations'),
+                        hintStyle: const TextStyle(color: Color(0xFF5A6678), fontSize: 12),
+                        prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF00D4FF), size: 18),
+                        filled: true,
+                        fillColor: const Color(0xFF131826),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: Color(0xFF1E2638)),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: Color(0xFF00D4FF)),
+                        ),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                IconButton(
-                  onPressed: () => _importFromClipboard(context),
-                  tooltip: 'Import from Clipboard',
-                  icon: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF131826),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFF1E2638)),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    onPressed: () => _importFromClipboard(context),
+                    tooltip: LocalizationService.tr('import_from_clipboard'),
+                    icon: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF131826),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFF1E2638)),
+                      ),
+                      child: const Icon(Icons.content_paste_rounded, color: Color(0xFF00D4FF), size: 18),
                     ),
-                    child: const Icon(Icons.content_paste_rounded, color: Color(0xFF00D4FF), size: 18),
                   ),
-                ),
-                IconButton(
-                  onPressed: () => _showAddSubscriptionDialog(context),
-                  tooltip: 'Subscription Settings',
-                  icon: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF131826),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFF1E2638)),
-                    ),
+                  IconButton(
+                    onPressed: () => _showAddSubscriptionDialog(context),
+                    tooltip: LocalizationService.tr('update_subscription'),
+                    icon: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF131826),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFF1E2638)),
+                      ),
                     child: const Icon(Icons.sync_rounded, color: Color(0xFF00FF88), size: 18),
                   ),
                 ),
@@ -410,8 +414,9 @@ class _VpnServerSheetState extends State<VpnServerSheet> {
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   String _extractFlag(String name) {
     final lower = name.toLowerCase();
