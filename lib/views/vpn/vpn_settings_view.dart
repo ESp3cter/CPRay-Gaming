@@ -73,10 +73,10 @@ class _VpnSettingsViewState extends State<VpnSettingsView> {
           _buildSwitchCard(
             title: 'Domestic Traffic Bypass',
             subtitle: 'Direct unthrottled access to local banking & .ir websites',
-            value: settings.bypassIran,
+            value: settings.bypassIranianTraffic,
             icon: Icons.alt_route_rounded,
             activeColor: const Color(0xFF00FF88),
-            onChanged: (val) => vpnProvider.setBypassIran(val),
+            onChanged: (val) => vpnProvider.setBypassIranianTraffic(val),
           ),
           const SizedBox(height: 10),
           _buildSwitchCard(
@@ -109,7 +109,7 @@ class _VpnSettingsViewState extends State<VpnSettingsView> {
                       return ChoiceChip(
                         label: Text(e.value),
                         selected: isSelected,
-                        onSelected: (_) => vpnProvider.setAntiSanctionProvider(e.key),
+                        onSelected: (_) => vpnProvider.setAntiSanctionMode(true, provider: e.key),
                         selectedColor: const Color(0xFF9D00FF).withOpacity(0.25),
                         backgroundColor: const Color(0xFF161C2C),
                         labelStyle: TextStyle(
@@ -180,10 +180,10 @@ class _VpnSettingsViewState extends State<VpnSettingsView> {
           _buildSwitchCard(
             title: 'Auto-Connect on Launch',
             subtitle: 'Automatically connect to the fastest node when opened',
-            value: settings.autoConnect,
+            value: settings.autoConnectOnLaunch,
             icon: Icons.flash_on_rounded,
             activeColor: const Color(0xFFFFB300),
-            onChanged: (val) => vpnProvider.setAutoConnect(val),
+            onChanged: (val) => vpnProvider.updateSettings(settings.copyWith(autoConnectOnLaunch: val)),
           ),
 
           const SizedBox(height: 22),
@@ -216,7 +216,7 @@ class _VpnSettingsViewState extends State<VpnSettingsView> {
                       ),
                       SizedBox(height: 2),
                       Text(
-                        'Version 0.3.6 (Sing-box Core 1.14+)',
+                        'Version 0.3.7 (Sing-box Core 1.14+)',
                         style: TextStyle(color: Color(0xFF6B7A94), fontSize: 11),
                       ),
                     ],
